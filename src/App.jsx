@@ -11,9 +11,9 @@ import PricingPage from './pages/PricingPage'
 import Layout from './components/Layout'
 
 const C = {
-  bg: "#06090f", surface: "#0d1117", border: "#1b2433", text: "#e0e6f0",
-  textDim: "#6b7b95", accent: "#22d3ee", purple: "#a78bfa", green: "#10b981",
-  red: "#ef4444", yellow: "#f59e0b",
+  bg: "#000000", surface: "#111111", border: "rgba(255,255,255,0.06)",
+  text: "#f5f5f7", textSecondary: "#a1a1a6", textTertiary: "#6e6e73",
+  accent: "#2997ff", green: "#34c759", red: "#ff3b30",
 }
 
 function AuthScreen({ onAuth }) {
@@ -48,71 +48,77 @@ function AuthScreen({ onAuth }) {
   }
 
   const inputStyle = {
-    width: '100%', padding: '12px 14px', border: `1px solid ${C.border}`, borderRadius: 8,
-    background: C.surface, color: C.text, fontSize: 14, fontFamily: "'Sora', sans-serif",
+    width: '100%', padding: '14px 16px',
+    border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: 12,
+    background: C.surface, color: C.text, fontSize: 15,
+    fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 400,
     outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
   }
 
   return (
     <div style={{
       minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Sora', 'Space Grotesk', sans-serif", color: C.text,
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: C.text,
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      <div style={{ width: '100%', maxWidth: 400, padding: 32 }}>
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ width: '100%', maxWidth: 380, padding: 32 }}>
+        <div style={{ textAlign: 'center', marginBottom: 44 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: 16, background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
-            boxShadow: '0 0 40px rgba(34,211,238,0.15)',
+            width: 48, height: 48, margin: '0 auto 20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2" strokeLinecap="round">
               <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" />
               <polyline points="16,7 22,7 22,13" />
             </svg>
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.03em' }}>TradeScope</h1>
-          <p style={{ color: C.textDim, fontSize: 14 }}>Van Tharp Analytics for Fidelity Trades</p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.03em' }}>
+            {isSignUp ? 'Create your account' : 'Sign in to TradeScope'}
+          </h1>
+          <p style={{ color: C.textSecondary, fontSize: 15, fontWeight: 400 }}>
+            Van Tharp analytics for your trades
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
             required style={inputStyle}
-            onFocus={e => e.target.style.borderColor = C.accent}
-            onBlur={e => e.target.style.borderColor = C.border}
+            onFocus={e => e.target.style.borderColor = 'rgba(41,151,255,0.5)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
           />
           <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
             required minLength={6} style={inputStyle}
-            onFocus={e => e.target.style.borderColor = C.accent}
-            onBlur={e => e.target.style.borderColor = C.border}
+            onFocus={e => e.target.style.borderColor = 'rgba(41,151,255,0.5)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
           />
 
-          {error && <div style={{ color: C.red, fontSize: 13, padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 6 }}>{error}</div>}
-          {confirmMsg && <div style={{ color: C.green, fontSize: 13, padding: '8px 12px', background: 'rgba(16,185,129,0.08)', borderRadius: 6 }}>{confirmMsg}</div>}
+          {error && <div style={{ color: C.red, fontSize: 13, padding: '10px 14px', background: 'rgba(255,59,48,0.08)', borderRadius: 10, fontWeight: 500 }}>{error}</div>}
+          {confirmMsg && <div style={{ color: C.green, fontSize: 13, padding: '10px 14px', background: 'rgba(52,199,89,0.08)', borderRadius: 10, fontWeight: 500 }}>{confirmMsg}</div>}
 
           <button type="submit" disabled={loading} style={{
-            padding: '13px 24px', border: 'none', borderRadius: 8,
-            background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-            color: 'white', fontSize: 14, fontWeight: 600, cursor: loading ? 'wait' : 'pointer',
-            fontFamily: "'Sora', sans-serif", opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s',
+            padding: '14px 24px', border: 'none', borderRadius: 12,
+            background: C.accent, color: 'white', fontSize: 16, fontWeight: 600,
+            cursor: loading ? 'wait' : 'pointer', fontFamily: 'inherit',
+            opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s',
+            marginTop: 4,
           }}>
             {loading ? '...' : isSignUp ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
           <button onClick={() => { setIsSignUp(!isSignUp); setError(''); setConfirmMsg(''); }}
             style={{
-              background: 'none', border: 'none', color: C.accent, fontSize: 13,
-              cursor: 'pointer', fontFamily: "'Sora', sans-serif",
+              background: 'none', border: 'none', color: C.accent, fontSize: 14,
+              cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500,
             }}>
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create one"}
           </button>
         </div>
         <div style={{ textAlign: 'center', marginTop: 12 }}>
           <button onClick={() => navigate('/')} style={{
-            background: 'none', border: 'none', color: C.textDim, fontSize: 12,
-            cursor: 'pointer', fontFamily: "'Sora', sans-serif",
+            background: 'none', border: 'none', color: C.textTertiary, fontSize: 13,
+            cursor: 'pointer', fontFamily: 'inherit', fontWeight: 400,
           }}>Back to home</button>
         </div>
       </div>
@@ -210,10 +216,11 @@ export default function App() {
   if (loading) {
     return (
       <div style={{
-        minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center',
-        justifyContent: 'center', color: C.textDim, fontFamily: "'Sora', sans-serif",
+        minHeight: '100vh', background: '#000000', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', color: '#a1a1a6',
+        fontFamily: "'Inter', -apple-system, sans-serif",
       }}>
-        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         Loading...
       </div>
     )

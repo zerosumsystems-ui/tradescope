@@ -2,27 +2,27 @@ import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, Legend, ReferenceLine, ComposedChart, Scatter } from "recharts";
 
 const C = {
-  bg: "#06090f",
-  bgAlt: "#0b1018",
-  surface: "#0f1520",
-  surfaceRaised: "#151d2b",
-  border: "#1a2438",
-  borderLight: "#243352",
-  text: "#dfe6f0",
-  textDim: "#6b7d9a",
-  textMuted: "#3d4f6a",
-  accent: "#00e5c7",
-  accentDim: "#0a4d42",
-  green: "#00e5a0",
-  greenSoft: "rgba(0,229,160,0.1)",
-  greenBar: "rgba(0,229,160,0.7)",
-  red: "#ff4d6a",
-  redSoft: "rgba(255,77,106,0.1)",
-  redBar: "rgba(255,77,106,0.7)",
-  yellow: "#ffc942",
-  orange: "#ff8c42",
-  purple: "#9b7dff",
-  cyan: "#00c2ff",
+  bg: "#000000",
+  bgAlt: "#0a0a0a",
+  surface: "#111111",
+  surfaceRaised: "#1a1a1a",
+  border: "rgba(255,255,255,0.06)",
+  borderLight: "rgba(255,255,255,0.12)",
+  text: "#f5f5f7",
+  textDim: "#a1a1a6",
+  textMuted: "#6e6e73",
+  accent: "#2997ff",
+  accentDim: "#1a5a9e",
+  green: "#34c759",
+  greenSoft: "rgba(52,199,89,0.1)",
+  greenBar: "rgba(52,199,89,0.7)",
+  red: "#ff3b30",
+  redSoft: "rgba(255,59,48,0.1)",
+  redBar: "rgba(255,59,48,0.7)",
+  yellow: "#ffcc00",
+  orange: "#ff9500",
+  purple: "#af52de",
+  cyan: "#5ac8fa",
   white: "#ffffff",
 };
 
@@ -469,9 +469,9 @@ const TT = ({ active, payload, label, formatter }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: C.surfaceRaised, border: `1px solid ${C.borderLight}`, borderRadius: 8, padding: "10px 14px", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-      <div style={{ fontSize: 10, color: C.textDim, marginBottom: 5, fontFamily: "var(--mono)", letterSpacing: "0.05em" }}>{label}</div>
+      <div style={{ fontSize: 10, color: C.textDim, marginBottom: 5, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.05em" }}>{label}</div>
       {payload.map((p, i) => (
-        <div key={i} style={{ fontSize: 12, color: p.color || C.text, fontWeight: 600, fontFamily: "var(--mono)" }}>
+        <div key={i} style={{ fontSize: 12, color: p.color || C.text, fontWeight: 600, fontFamily: "'Inter', -apple-system, sans-serif" }}>
           {p.name}: {formatter ? formatter(p.value) : (typeof p.value === "number" ? p.value.toFixed(2) : p.value)}
         </div>
       ))}
@@ -482,19 +482,19 @@ const TT = ({ active, payload, label, formatter }) => {
 function MetricCard({ label, value, sub, color, rating, ratingColor, small }) {
   return (
     <div style={{
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
-      padding: small ? "14px 16px" : "18px 20px", display: "flex", flexDirection: "column", gap: 4,
+      background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 16,
+      padding: small ? "16px 18px" : "20px 22px", display: "flex", flexDirection: "column", gap: 6,
       transition: "border-color 0.2s", minWidth: 0,
     }}
     onMouseEnter={e => e.currentTarget.style.borderColor = C.borderLight}
     onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
     >
-      <div style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--mono)" }}>{label}</div>
+      <div style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif" }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: small ? 20 : 26, fontWeight: 700, color: color || C.text, fontFamily: "var(--heading)", letterSpacing: "-0.03em" }}>{value}</span>
-        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, fontFamily: "var(--mono)", padding: "2px 8px", borderRadius: 4, background: `${ratingColor || C.accent}18`, letterSpacing: "0.04em" }}>{rating}</span>}
+        <span style={{ fontSize: small ? 20 : 26, fontWeight: 700, color: color || C.text, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "-0.03em" }}>{value}</span>
+        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, fontFamily: "'Inter', -apple-system, sans-serif", padding: "2px 8px", borderRadius: 4, background: `${ratingColor || C.accent}18`, letterSpacing: "0.04em" }}>{rating}</span>}
       </div>
-      {sub && <div style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)", lineHeight: 1.4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", lineHeight: 1.4 }}>{sub}</div>}
     </div>
   );
 }
@@ -502,16 +502,16 @@ function MetricCard({ label, value, sub, color, rating, ratingColor, small }) {
 function ChartBox({ title, children, info }) {
   const [showInfo, setShowInfo] = useState(false);
   return (
-    <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: "18px 18px 10px", position: "relative" }}>
+    <div style={{ background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}`, padding: "20px 20px 12px", position: "relative" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{title}</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>{title}</div>
         {info && (
           <div style={{ position: "relative" }}>
-            <button onClick={() => setShowInfo(!showInfo)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textDim, fontSize: 10, padding: "2px 6px", cursor: "pointer", fontFamily: "var(--mono)" }}>?</button>
+            <button onClick={() => setShowInfo(!showInfo)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textDim, fontSize: 10, padding: "2px 6px", cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>?</button>
             {showInfo && (
-              <div style={{ position: "absolute", right: 0, top: 24, width: 280, background: C.surfaceRaised, border: `1px solid ${C.borderLight}`, borderRadius: 8, padding: 14, fontSize: 11, color: C.textDim, lineHeight: 1.6, zIndex: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", fontFamily: "var(--mono)" }}>
+              <div style={{ position: "absolute", right: 0, top: 24, width: 280, background: C.surfaceRaised, border: `1px solid ${C.borderLight}`, borderRadius: 8, padding: 14, fontSize: 11, color: C.textDim, lineHeight: 1.6, zIndex: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", fontFamily: "'Inter', -apple-system, sans-serif" }}>
                 {info}
-                <button onClick={() => setShowInfo(false)} style={{ display: "block", marginTop: 8, background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: 10, fontFamily: "var(--mono)" }}>close</button>
+                <button onClick={() => setShowInfo(false)} style={{ display: "block", marginTop: 8, background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }}>close</button>
               </div>
             )}
           </div>
@@ -536,8 +536,8 @@ function TradeTableComponent({ trades, strategyTags, onSetStrategy }) {
     });
   }, [trades, sortKey, sortDir, strategyTags]);
   const toggle = k => { if (sortKey === k) setSortDir(d => d * -1); else { setSortKey(k); setSortDir(-1); } };
-  const th = { padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 600, color: C.textDim, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--mono)", cursor: "pointer", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", background: C.surface, position: "sticky", top: 0, zIndex: 1 };
-  const td = { padding: "8px 12px", fontSize: 12, fontFamily: "var(--mono)", borderBottom: `1px solid ${C.border}`, color: C.text, whiteSpace: "nowrap" };
+  const th = { padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 600, color: C.textDim, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif", cursor: "pointer", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", background: C.surface, position: "sticky", top: 0, zIndex: 1 };
+  const td = { padding: "8px 12px", fontSize: 12, fontFamily: "'Inter', -apple-system, sans-serif", borderBottom: `1px solid ${C.border}`, color: C.text, whiteSpace: "nowrap" };
   const cols = [["idx", "#"], ["symbol", "Sym"], ["strategy", "Strategy"], ["buyDate", "Entry"], ["sellDate", "Exit"], ["quantity", "Qty"], ["buyPrice", "Buy"], ["sellPrice", "Sell"], ["rMultiple", "R-Mult"], ["pnl", "P&L $"], ["pnlPercent", "%"], ["holdDays", "Days"]];
   return (
     <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: 520, borderRadius: 8, border: `1px solid ${C.border}` }}>
@@ -561,7 +561,7 @@ function TradeTableComponent({ trades, strategyTags, onSetStrategy }) {
                 <td style={td}>
                   <select value={strategy} onChange={e => onSetStrategy(tradeKey, e.target.value)} style={{
                     padding: "3px 4px", background: strategy ? `${C.purple}18` : C.bgAlt, border: `1px solid ${strategy ? `${C.purple}40` : C.border}`,
-                    borderRadius: 4, color: strategy ? C.purple : C.textMuted, fontSize: 10, fontFamily: "var(--mono)",
+                    borderRadius: 4, color: strategy ? C.purple : C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif",
                     fontWeight: strategy ? 600 : 400, outline: "none", cursor: "pointer", appearance: "auto",
                   }}>
                     <option value="">--</option>
@@ -768,8 +768,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
   if (!loaded) {
     return (
-      <div style={{ "--mono": "'IBM Plex Mono', monospace", "--heading": "'DM Sans', sans-serif", minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--heading)", color: C.text }}>
-        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <div style={{ width: "100%", maxWidth: 540, padding: 28 }}>
           <div style={{ textAlign: "center", marginBottom: 44 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -782,7 +782,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               Van Tharp analytics — R-multiples, SQN, expectancy, expectunity, and complete system quality analysis
             </p>
           </div>
-          <div style={{ border: `2px dashed ${dragOver ? C.accent : C.border}`, borderRadius: 14, padding: "44px 28px", textAlign: "center", cursor: "pointer", background: dragOver ? `${C.accent}08` : "transparent", transition: "all 0.2s" }}
+          <div style={{ border: `1.5px dashed ${dragOver ? C.accent : "rgba(255,255,255,0.12)"}`, borderRadius: 20, padding: "52px 32px", textAlign: "center", cursor: "pointer", background: dragOver ? "rgba(41,151,255,0.04)" : "transparent", transition: "all 0.3s ease" }}
             onClick={() => fileRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -791,26 +791,26 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 14 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Drop your broker CSV or click to browse</div>
-            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "var(--mono)" }}>Supports Fidelity, Schwab, IBKR, Webull, Tradovate, AMP, TradeLocker</div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "'Inter', -apple-system, sans-serif" }}>Supports Fidelity, Schwab, IBKR, Webull, Tradovate, AMP, TradeLocker</div>
           </div>
           <div style={{ textAlign: "center", margin: "20px 0", color: C.textMuted, fontSize: 12 }}>or</div>
-          <button onClick={() => processCSV(SAMPLE_CSV)} style={{ width: "100%", padding: "13px 24px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--heading)", transition: "all 0.2s" }}
+          <button onClick={() => processCSV(SAMPLE_CSV)} style={{ width: "100%", padding: "13px 24px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", transition: "all 0.2s" }}
             onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
             onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
           >Load Sample Data (20 trades)</button>
           <div style={{ marginTop: 28, padding: "16px 18px", background: C.surface, borderRadius: 10, border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--mono)", marginBottom: 8 }}>R-value configuration</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif", marginBottom: 8 }}>R-value configuration</div>
             <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)", display: "block", marginBottom: 4 }}>Account Size ($)</label>
-                <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "var(--mono)", outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", display: "block", marginBottom: 4 }}>Account Size ($)</label>
+                <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)", display: "block", marginBottom: 4 }}>Risk per Trade (%)</label>
-                <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "var(--mono)", outline: "none", boxSizing: "border-box" }} />
+                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", display: "block", marginBottom: 4 }}>Risk per Trade (%)</label>
+                <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
               </div>
             </div>
-            <div style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)", marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} (initial risk per trade)</div>
+            <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} (initial risk per trade)</div>
           </div>
         </div>
       </div>
@@ -826,27 +826,27 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   ];
 
   return (
-    <div style={{ "--mono": "'IBM Plex Mono', monospace", "--heading": "'DM Sans', sans-serif", minHeight: "100vh", background: C.bg, fontFamily: "var(--heading)", color: C.text }}>
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, flexWrap: "wrap", gap: 8 }}>
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ borderBottom: `0.5px solid ${C.border}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.02)", flexWrap: "wrap", gap: 8 }}>
         <div style={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: "6px 14px", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--heading)", background: activeTab === tab.id ? `${C.accent}18` : "transparent", color: activeTab === tab.id ? C.accent : C.textDim, transition: "all 0.15s" }}>{tab.label}</button>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: "7px 16px", border: "none", borderRadius: 980, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", background: activeTab === tab.id ? "rgba(255,255,255,0.1)" : "transparent", color: activeTab === tab.id ? C.text : C.textDim, transition: "all 0.2s ease" }}>{tab.label}</button>
           ))}
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "var(--mono)" }}>Acct $</label>
-            <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 80, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "var(--mono)", outline: "none" }} />
-            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "var(--mono)" }}>Risk %</label>
-            <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 48, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "var(--mono)", outline: "none" }} />
+            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Acct $</label>
+            <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 80, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Risk %</label>
+            <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 48, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
           </div>
-          <span style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)" }}>1R = ${riskPerTrade.toLocaleString()}</span>
-          {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow, fontFamily: "var(--mono)" }}>Saving...</span>}
-          {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green, fontFamily: "var(--mono)" }}>✓ Saved</span>}
-          {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red, fontFamily: "var(--mono)" }}>Save failed</span>}
-          <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 5, background: "transparent", color: C.textDim, fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)" }}>New Import</button>
-          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "5px 10px", border: `1px solid ${C.red}33`, borderRadius: 5, background: "transparent", color: C.red, fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)" }}>Clear DB</button>}
+          <span style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>1R = ${riskPerTrade.toLocaleString()}</span>
+          {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow, fontFamily: "'Inter', -apple-system, sans-serif" }}>Saving...</span>}
+          {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green, fontFamily: "'Inter', -apple-system, sans-serif" }}>✓ Saved</span>}
+          {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red, fontFamily: "'Inter', -apple-system, sans-serif" }}>Save failed</span>}
+          <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 5, background: "transparent", color: C.textDim, fontSize: 10, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>New Import</button>
+          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "5px 10px", border: `1px solid ${C.red}33`, borderRadius: 5, background: "transparent", color: C.red, fontSize: 10, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>Clear DB</button>}
         </div>
       </div>
 
@@ -883,12 +883,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 <div style={{ display: "flex", height: 32, borderRadius: 6, overflow: "hidden", position: "relative", marginBottom: 8 }}>
                   {[{ max: 1.5, label: "<1.5 Hard", c: C.red }, { max: 2, label: "1.5-2 Avg", c: C.orange }, { max: 3, label: "2-3 Good", c: C.yellow }, { max: 5, label: "3-5 Excellent", c: C.green }, { max: 7, label: "5-7 Superb", c: C.accent }, { max: 10, label: "7+ Grail", c: C.cyan }].map((seg, i, arr) => (
                     <div key={i} style={{ flex: seg.max - (i === 0 ? 0 : arr[i - 1].max), background: `${seg.c}30`, borderRight: `1px solid ${C.bg}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: 8, color: seg.c, fontFamily: "var(--mono)", fontWeight: 600, whiteSpace: "nowrap" }}>{seg.label}</span>
+                      <span style={{ fontSize: 8, color: seg.c, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 600, whiteSpace: "nowrap" }}>{seg.label}</span>
                     </div>
                   ))}
                   <div style={{ position: "absolute", top: -4, bottom: -4, left: `${Math.min(95, Math.max(2, (stats.sqn / 10) * 100))}%`, width: 3, background: C.white, borderRadius: 2, boxShadow: `0 0 8px ${C.white}80`, transition: "left 0.3s" }} />
                 </div>
-                <div style={{ fontSize: 12, color: C.text, fontFamily: "var(--mono)", textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: C.text, fontFamily: "'Inter', -apple-system, sans-serif", textAlign: "center" }}>
                   Your SQN: <strong style={{ color: stats.sqnRating.color }}>{stats.sqn.toFixed(2)}</strong> — {stats.sqnRating.label}
                 </div>
               </div>
@@ -899,8 +899,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 <AreaChart data={stats.cumRData}>
                   <defs><linearGradient id="cumRGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.accent} stopOpacity={0.15} /><stop offset="95%" stopColor={C.accent} stopOpacity={0} /></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis dataKey="trade" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} label={{ value: "Trade #", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textDim, fontFamily: "var(--mono)" } }} />
-                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} />
+                  <XAxis dataKey="trade" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} label={{ value: "Trade #", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" } }} />
+                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} />
                   <ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" />
                   <Tooltip content={<TT formatter={v => `${v}R`} />} />
                   <Area type="monotone" dataKey="cumR" stroke={C.accent} strokeWidth={2} fill="url(#cumRGrad)" name="Cumulative R" dot={false} />
@@ -913,8 +913,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 <AreaChart data={stats.ddRData}>
                   <defs><linearGradient id="ddRGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.red} stopOpacity={0.15} /><stop offset="95%" stopColor={C.red} stopOpacity={0} /></linearGradient></defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis dataKey="trade" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} />
-                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} />
+                  <XAxis dataKey="trade" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} />
+                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} />
                   <Tooltip content={<TT formatter={v => `${v}R`} />} />
                   <Area type="monotone" dataKey="dd" stroke={C.red} strokeWidth={1.5} fill="url(#ddRGrad)" name="Drawdown" dot={false} />
                 </AreaChart>
@@ -929,8 +929,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={stats.bins}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis dataKey="range" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} />
-                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} label={{ value: "Trades", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: C.textDim, fontFamily: "var(--mono)" } }} />
+                  <XAxis dataKey="range" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} />
+                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} label={{ value: "Trades", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" } }} />
                   <Tooltip content={<TT formatter={v => `${v} trades`} />} />
                   <Bar dataKey="count" name="Trades" radius={[4, 4, 0, 0]}>
                     {stats.bins.map((b, i) => <Cell key={i} fill={b.isWin ? C.greenBar : C.redBar} />)}
@@ -943,8 +943,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={stats.tradeData.map((t, i) => ({ name: `#${i + 1}`, r: t.rMultiple, sym: t.symbol }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis dataKey="name" tick={{ fill: C.textMuted, fontSize: 8, fontFamily: "var(--mono)" }} stroke={C.border} interval={Math.max(0, Math.floor(stats.n / 20))} />
-                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} />
+                  <XAxis dataKey="name" tick={{ fill: C.textMuted, fontSize: 8, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} interval={Math.max(0, Math.floor(stats.n / 20))} />
+                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} />
                   <ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" />
                   <Tooltip content={<TT formatter={v => `${v}R`} />} />
                   <Bar dataKey="r" name="R-Multiple" radius={[3, 3, 0, 0]}>
@@ -958,8 +958,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={stats.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} />
-                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} />
+                  <XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} />
+                  <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} />
                   <ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" />
                   <Tooltip content={<TT formatter={v => `${v}R`} />} />
                   <Bar dataKey="totalR" name="Monthly R" radius={[4, 4, 0, 0]}>
@@ -987,14 +987,14 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           return (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-                <div style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)" }}>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>
                   {filteredTrades.length} {filterStrategy ? "filtered" : "closed"} trades · 1R = ${riskPerTrade.toLocaleString()}
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "var(--mono)" }}>Strategy:</label>
+                  <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Strategy:</label>
                   <select value={filterStrategy} onChange={e => setFilterStrategy(e.target.value)} style={{
                     padding: "4px 8px", background: C.bgAlt, border: `1px solid ${C.border}`,
-                    borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "var(--mono)", outline: "none", appearance: "auto",
+                    borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", appearance: "auto",
                   }}>
                     <option value="">All</option>
                     {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1012,12 +1012,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               {stats.bySymbol.map(s => (
                 <div key={s.symbol} style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: C.accent, fontFamily: "var(--mono)" }}>{s.symbol}</div>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: C.accent, fontFamily: "'Inter', -apple-system, sans-serif" }}>{s.symbol}</div>
                     <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>{s.trades} trades · {s.winRate}% WR</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--mono)", color: s.totalR >= 0 ? C.green : C.red }}>{s.totalR >= 0 ? "+" : ""}{s.totalR}R</div>
-                    <div style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)" }}>avg {s.avgR}R · ${s.totalPnl.toLocaleString()}</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Inter', -apple-system, sans-serif", color: s.totalR >= 0 ? C.green : C.red }}>{s.totalR >= 0 ? "+" : ""}{s.totalR}R</div>
+                    <div style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>avg {s.avgR}R · ${s.totalPnl.toLocaleString()}</div>
                   </div>
                 </div>
               ))}
@@ -1026,8 +1026,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ResponsiveContainer width="100%" height={Math.max(200, stats.bySymbol.length * 36)}>
                 <BarChart data={stats.bySymbol} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                  <XAxis type="number" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} />
-                  <YAxis dataKey="symbol" type="category" tick={{ fill: C.accent, fontSize: 11, fontWeight: 600, fontFamily: "var(--mono)" }} stroke={C.border} width={55} />
+                  <XAxis type="number" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} />
+                  <YAxis dataKey="symbol" type="category" tick={{ fill: C.accent, fontSize: 11, fontWeight: 600, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} width={55} />
                   <ReferenceLine x={0} stroke={C.textMuted} strokeDasharray="3 3" />
                   <Tooltip content={<TT formatter={v => `${v}R`} />} />
                   <Bar dataKey="totalR" name="Total R" radius={[0, 4, 4, 0]}>
@@ -1057,7 +1057,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ChartBox title="R by Day of Week" info="Total R earned by exit day. Identify your best/worst trading days.">
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={dayData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="day" tick={{ fill: C.textMuted, fontSize: 11, fontFamily: "var(--mono)" }} stroke={C.border} /><YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} /><ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" /><Tooltip content={<TT formatter={v => `${v}R`} />} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="day" tick={{ fill: C.textMuted, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} /><YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} /><ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" /><Tooltip content={<TT formatter={v => `${v}R`} />} />
                     <Bar dataKey="totalR" name="Total R" radius={[4, 4, 0, 0]}>{dayData.map((d, i) => <Cell key={i} fill={d.totalR >= 0 ? C.greenBar : C.redBar} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -1065,7 +1065,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ChartBox title="Monthly Win Rate vs Trade Count" info="Opportunity (frequency) × Expectancy = total return. Van Tharp calls this Expectunity.">
                 <ResponsiveContainer width="100%" height={240}>
                   <ComposedChart data={stats.monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} /><YAxis yAxisId="left" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}%`} /><YAxis yAxisId="right" orientation="right" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} /><Tooltip content={<TT />} /><Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--mono)" }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="month" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} /><YAxis yAxisId="left" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}%`} /><YAxis yAxisId="right" orientation="right" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} /><Tooltip content={<TT />} /><Legend wrapperStyle={{ fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif" }} />
                     <Bar yAxisId="right" dataKey="trades" name="Trades" fill={`${C.purple}40`} radius={[4, 4, 0, 0]} /><Line yAxisId="left" dataKey="winRate" name="Win %" stroke={C.accent} strokeWidth={2} dot={{ r: 3, fill: C.accent }} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -1073,7 +1073,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <ChartBox title="Holding Period vs R-Multiple" info="Do your best trades come from quick flips or patient holds? Scatter of days held vs R outcome.">
                 <ResponsiveContainer width="100%" height={260}>
                   <ComposedChart data={holdData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="hold" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} label={{ value: "Days Held", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textDim } }} /><YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `${v}R`} /><ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" /><Tooltip content={<TT formatter={v => `${v}R`} />} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} /><XAxis dataKey="hold" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} label={{ value: "Days Held", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textDim } }} /><YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `${v}R`} /><ReferenceLine y={0} stroke={C.textMuted} strokeDasharray="3 3" /><Tooltip content={<TT formatter={v => `${v}R`} />} />
                     <Scatter dataKey="r" name="R-Multiple" fill={C.accent}>{holdData.map((d, i) => <Cell key={i} fill={d.r >= 0 ? C.green : C.red} />)}</Scatter>
                   </ComposedChart>
                 </ResponsiveContainer>

@@ -2,19 +2,20 @@ import { useState, useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, BarChart, Bar, Cell } from "recharts";
 
 const C = {
-  bg: "#06090f", bgAlt: "#0b1018", surface: "#0f1520", surfaceRaised: "#151d2b",
-  border: "#1a2438", borderLight: "#243352", text: "#dfe6f0", textDim: "#6b7d9a",
-  textMuted: "#3d4f6a", accent: "#00e5c7", green: "#00e5a0", red: "#ff4d6a",
-  yellow: "#ffc942", orange: "#ff8c42", purple: "#9b7dff", cyan: "#00c2ff", white: "#ffffff",
+  bg: "#000000", surface: "#111111", surfaceRaised: "#1a1a1a",
+  border: "rgba(255,255,255,0.06)", borderHover: "rgba(255,255,255,0.12)",
+  text: "#f5f5f7", textSecondary: "#a1a1a6", textTertiary: "#6e6e73",
+  accent: "#2997ff", green: "#34c759", red: "#ff3b30",
+  yellow: "#ffcc00", orange: "#ff9500", purple: "#af52de", cyan: "#5ac8fa", white: "#ffffff",
 };
 
 const TT = ({ active, payload, label, formatter }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: C.surfaceRaised, border: `1px solid ${C.borderLight}`, borderRadius: 8, padding: "10px 14px", boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}>
-      <div style={{ fontSize: 10, color: C.textDim, marginBottom: 5, fontFamily: "var(--mono)", letterSpacing: "0.05em" }}>{label}</div>
+    <div style={{ background: C.surfaceRaised, border: `0.5px solid ${C.borderHover}`, borderRadius: 12, padding: "12px 16px", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", backdropFilter: "blur(20px)" }}>
+      <div style={{ fontSize: 11, color: C.textTertiary, marginBottom: 6, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, letterSpacing: "0.02em" }}>{label}</div>
       {payload.map((p, i) => (
-        <div key={i} style={{ fontSize: 12, color: p.color || C.text, fontWeight: 600, fontFamily: "var(--mono)" }}>
+        <div key={i} style={{ fontSize: 13, color: p.color || C.text, fontWeight: 500, fontFamily: "'Inter', -apple-system, sans-serif" }}>
           {p.name}: {formatter ? formatter(p.value) : (typeof p.value === "number" ? p.value.toLocaleString(undefined, { maximumFractionDigits: 0 }) : p.value)}
         </div>
       ))}
@@ -148,13 +149,13 @@ export default function CalculatorPage() {
   }, [accountSize, riskPct, winRate, avgWinR, avgLossR, numTrades, method]);
 
   const inputStyle = {
-    width: "100%", padding: "10px 12px", background: C.bgAlt, border: `1px solid ${C.border}`,
-    borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "var(--mono)",
-    outline: "none", boxSizing: "border-box",
+    width: "100%", padding: "12px 14px", background: C.surface, border: `0.5px solid ${C.border}`,
+    borderRadius: 12, color: C.text, fontSize: 14, fontFamily: "'Inter', -apple-system, sans-serif",
+    fontWeight: 400, outline: "none", boxSizing: "border-box", transition: "border-color 0.2s ease",
   };
   const labelStyle = {
-    fontSize: 10, color: C.textDim, fontFamily: "var(--mono)",
-    letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6,
+    fontSize: 11, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif",
+    fontWeight: 500, letterSpacing: "0.02em", textTransform: "uppercase", display: "block", marginBottom: 8,
   };
 
   const methods = [
@@ -165,29 +166,28 @@ export default function CalculatorPage() {
 
   return (
     <div style={{
-      "--mono": "'IBM Plex Mono', monospace", "--heading": "'DM Sans', sans-serif",
-      maxWidth: 1100, margin: "0 auto", padding: "24px 24px 60px",
-      fontFamily: "var(--heading)", color: C.text,
+      maxWidth: 1100, margin: "0 auto", padding: "32px 28px 72px",
+      fontFamily: "'Inter', -apple-system, sans-serif", color: C.text,
     }}>
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>Position Sizing Calculator</h1>
-        <p style={{ fontSize: 13, color: C.textDim, marginTop: 4 }}>
+      <div style={{ marginBottom: 36 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.04em", fontFamily: "'Inter', -apple-system, sans-serif" }}>Position Sizing Calculator</h1>
+        <p style={{ fontSize: 15, color: C.textSecondary, marginTop: 6, fontWeight: 400, lineHeight: 1.5 }}>
           Model Van Tharp's position sizing methods and simulate equity curves with Monte Carlo analysis
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 20, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24, alignItems: "start" }}>
         {/* ── Left: Controls ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 80 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "sticky", top: 80 }}>
           {/* System Parameters */}
           <div style={{
-            background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: 20,
+            background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: 24,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.accent, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>System Parameters</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.accent, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 20 }}>System Parameters</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <label style={labelStyle}>Win Rate (%)</label>
                 <input type="number" value={winRate} min={1} max={99} onChange={e => setWinRate(Number(e.target.value) || 50)} style={inputStyle} />
@@ -205,18 +205,18 @@ export default function CalculatorPage() {
                 <input type="number" value={numTrades} min={10} max={1000} step={10} onChange={e => setNumTrades(Number(e.target.value) || 200)} style={inputStyle} />
               </div>
               <div style={{
-                padding: "10px 14px", borderRadius: 8,
+                padding: "14px 18px", borderRadius: 16,
                 background: expectancy >= 0 ? `${C.green}10` : `${C.red}10`,
-                border: `1px solid ${expectancy >= 0 ? `${C.green}30` : `${C.red}30`}`,
+                border: `0.5px solid ${expectancy >= 0 ? `${C.green}20` : `${C.red}20`}`,
               }}>
-                <div style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase" }}>System Expectancy</div>
+                <div style={{ fontSize: 11, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>System Expectancy</div>
                 <div style={{
-                  fontSize: 22, fontWeight: 800, fontFamily: "var(--mono)",
-                  color: expectancy >= 0 ? C.green : C.red,
+                  fontSize: 28, fontWeight: 700, fontFamily: "'Inter', -apple-system, sans-serif",
+                  color: expectancy >= 0 ? C.green : C.red, letterSpacing: "-0.03em",
                 }}>
                   {expectancy >= 0 ? "+" : ""}{expectancy.toFixed(3)}R
                 </div>
-                <div style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)", marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 400, marginTop: 2 }}>
                   {expectancy > 0 ? "Positive edge" : expectancy === 0 ? "Breakeven system" : "Negative edge"}
                 </div>
               </div>
@@ -225,10 +225,10 @@ export default function CalculatorPage() {
 
           {/* Position Sizing */}
           <div style={{
-            background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: 20,
+            background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: 24,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>Position Sizing</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.purple, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 20 }}>Position Sizing</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <label style={labelStyle}>Account Size ($)</label>
                 <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={inputStyle} />
@@ -239,16 +239,16 @@ export default function CalculatorPage() {
               </div>
               <div>
                 <label style={labelStyle}>Method</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {methods.map(m => (
                     <button key={m.id} onClick={() => setMethod(m.id)} style={{
-                      padding: "10px 12px", borderRadius: 8, textAlign: "left", cursor: "pointer",
-                      border: `1px solid ${method === m.id ? C.accent : C.border}`,
-                      background: method === m.id ? `${C.accent}12` : "transparent",
-                      transition: "all 0.15s",
+                      padding: "14px 16px", borderRadius: 16, textAlign: "left", cursor: "pointer",
+                      border: `0.5px solid ${method === m.id ? C.accent : C.border}`,
+                      background: method === m.id ? `${C.accent}10` : "transparent",
+                      transition: "all 0.2s ease",
                     }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: method === m.id ? C.accent : C.text, fontFamily: "var(--heading)" }}>{m.label}</div>
-                      <div style={{ fontSize: 10, color: C.textDim, marginTop: 2, fontFamily: "var(--mono)", lineHeight: 1.4 }}>{m.desc}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: method === m.id ? C.accent : C.text, fontFamily: "'Inter', -apple-system, sans-serif" }}>{m.label}</div>
+                      <div style={{ fontSize: 11, color: C.textSecondary, marginTop: 4, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 400, lineHeight: 1.5 }}>{m.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -259,7 +259,7 @@ export default function CalculatorPage() {
                   <input type="number" value={fixedRatioD} min={1} onChange={e => setFixedRatioD(Number(e.target.value) || 10)} style={inputStyle} />
                 </div>
               )}
-              <div style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)" }}>
+              <div style={{ fontSize: 13, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500 }}>
                 1R = ${riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
             </div>
@@ -267,9 +267,9 @@ export default function CalculatorPage() {
         </div>
 
         {/* ── Right: Results ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Summary Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
             {[
               { l: "Median Final Equity", v: `$${sim.medianFinal.toLocaleString()}`, c: sim.medianFinal >= accountSize ? C.green : C.red },
               { l: "Median Return", v: `${((sim.medianFinal / accountSize - 1) * 100).toFixed(1)}%`, c: sim.medianFinal >= accountSize ? C.green : C.red },
@@ -279,20 +279,20 @@ export default function CalculatorPage() {
               { l: "Risk per Trade", v: `$${riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, c: C.cyan },
             ].map(m => (
               <div key={m.l} style={{
-                background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
-                padding: "14px 16px",
+                background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}`,
+                padding: "18px 20px",
               }}>
-                <div style={{ fontSize: 9, color: C.textMuted, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{m.l}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: m.c, fontFamily: "var(--mono)", marginTop: 4, letterSpacing: "-0.02em" }}>{m.v}</div>
+                <div style={{ fontSize: 10, color: C.textTertiary, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>{m.l}</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: m.c, fontFamily: "'Inter', -apple-system, sans-serif", marginTop: 6, letterSpacing: "-0.03em" }}>{m.v}</div>
               </div>
             ))}
           </div>
 
           {/* Equity Curve */}
           <div style={{
-            background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: "18px 18px 10px",
+            background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: "24px 24px 14px",
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 18 }}>
               Monte Carlo Equity Curves ({sim.numSims} simulations)
             </div>
             <ResponsiveContainer width="100%" height={340}>
@@ -308,11 +308,11 @@ export default function CalculatorPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                <XAxis dataKey="trade" tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} label={{ value: "Trade #", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textDim, fontFamily: "var(--mono)" } }} />
-                <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                <ReferenceLine y={accountSize} stroke={C.textMuted} strokeDasharray="3 3" label={{ value: "Start", fill: C.textMuted, fontSize: 9, fontFamily: "var(--mono)" }} />
+                <XAxis dataKey="trade" tick={{ fill: C.textTertiary, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} label={{ value: "Trade #", position: "insideBottomRight", offset: -5, style: { fontSize: 10, fill: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif" } }} />
+                <YAxis tick={{ fill: C.textTertiary, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                <ReferenceLine y={accountSize} stroke={C.textTertiary} strokeDasharray="3 3" label={{ value: "Start", fill: C.textTertiary, fontSize: 9, fontFamily: "'Inter', -apple-system, sans-serif" }} />
                 <Tooltip content={<TT formatter={v => `$${v.toLocaleString()}`} />} />
-                <Legend wrapperStyle={{ fontSize: 11, fontFamily: "var(--mono)" }} />
+                <Legend wrapperStyle={{ fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif" }} />
                 <Area type="monotone" dataKey="p90" stroke="none" fill="url(#rangeGrad)" name="90th Percentile" />
                 <Area type="monotone" dataKey="p10" stroke={C.red} strokeWidth={1} strokeDasharray="4 4" fill="none" name="10th Percentile" dot={false} />
                 <Area type="monotone" dataKey="median" stroke={C.accent} strokeWidth={2} fill="url(#medGrad)" name="Median" dot={false} />
@@ -324,16 +324,16 @@ export default function CalculatorPage() {
 
           {/* Final Equity Distribution */}
           <div style={{
-            background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: "18px 18px 10px",
+            background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: "24px 24px 14px",
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 18 }}>
               Final Equity Distribution (500 runs)
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                <XAxis dataKey="range" tick={{ fill: C.textMuted, fontSize: 9, fontFamily: "var(--mono)" }} stroke={C.border} interval={2} />
-                <YAxis tick={{ fill: C.textMuted, fontSize: 10, fontFamily: "var(--mono)" }} stroke={C.border} />
+                <XAxis dataKey="range" tick={{ fill: C.textTertiary, fontSize: 9, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} interval={2} />
+                <YAxis tick={{ fill: C.textTertiary, fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }} stroke={C.border} />
                 <Tooltip content={<TT formatter={v => `${v} simulations`} />} />
                 <Bar dataKey="count" name="Simulations" radius={[3, 3, 0, 0]}>
                   {distData.map((d, i) => <Cell key={i} fill={d.isAboveStart ? `${C.green}80` : `${C.red}80`} />)}
@@ -344,9 +344,9 @@ export default function CalculatorPage() {
 
           {/* Van Tharp's Position Sizing Rules */}
           <div style={{
-            background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: 24,
+            background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: 28,
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.purple, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.purple, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 20 }}>
               Van Tharp's Position Sizing Guidelines
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
@@ -357,14 +357,14 @@ export default function CalculatorPage() {
                 { title: "Reckless", risk: "5%+", desc: "Almost never recommended. Even strong systems face ruin risk at this level. Reserved only for very high SQN systems with limited capital.", color: C.red },
               ].map(g => (
                 <div key={g.title} style={{
-                  padding: "14px 16px", borderRadius: 8, border: `1px solid ${g.color}25`,
+                  padding: "18px 20px", borderRadius: 16, border: `0.5px solid ${g.color}20`,
                   background: `${g.color}08`,
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: g.color }}>{g.title}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, fontFamily: "var(--mono)", color: g.color }}>{g.risk}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: g.color, fontFamily: "'Inter', -apple-system, sans-serif" }}>{g.title}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, fontFamily: "'Inter', -apple-system, sans-serif", color: g.color, background: `${g.color}12`, padding: "4px 12px", borderRadius: 980 }}>{g.risk}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>{g.desc}</div>
+                  <div style={{ fontSize: 12, color: C.textSecondary, lineHeight: 1.6, fontWeight: 400 }}>{g.desc}</div>
                 </div>
               ))}
             </div>
