@@ -46,7 +46,7 @@ export default function PricingPage() {
       popular: true,
       features: [
         "Unlimited trades",
-        "Multi-broker import (Fidelity, Schwab, IBKR, Webull)",
+        "Multi-broker import (Fidelity, Schwab, IBKR, Webull, Tradovate, AMP, TradeLocker)",
         "Full Van Tharp metric suite",
         "Trade journal with emotions & strategy tags",
         "Strategy performance comparison",
@@ -240,7 +240,7 @@ export default function PricingPage() {
         </h2>
         {[
           { q: "Can I try Pro or Elite before committing?", a: "Yes. Both paid plans come with a 14-day free trial. No credit card required to start." },
-          { q: "Which brokers are supported?", a: "Free supports Fidelity CSV exports. Pro and Elite add Schwab, Interactive Brokers, and Webull, with more brokers added regularly." },
+          { q: "Which brokers are supported?", a: "Free supports Fidelity CSV exports. Pro and Elite add Schwab, Interactive Brokers, Webull, Tradovate, AMP Futures (CQG/Rithmic), and TradeLocker, with more brokers added regularly." },
           { q: "How does the AI Trade Coach work?", a: "It analyzes your trade history, journal entries, and performance patterns to surface personalized insights. Things like your best strategy, worst trading days, emotional patterns tied to losses, and more." },
           { q: "Is my data secure?", a: "Yes. All data is encrypted in transit and at rest. We use Supabase with row-level security — you can only access your own trades. We never share or sell your data." },
           { q: "Can I cancel anytime?", a: "Yes. Cancel anytime from your account settings. You'll keep access through the end of your billing period." },
