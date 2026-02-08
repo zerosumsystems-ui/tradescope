@@ -141,7 +141,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section style={{
         maxWidth: 1100, margin: "0 auto 100px", padding: "0 24px",
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16,
+        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16,
         alignItems: "start",
       }}>
         {tiers.map(tier => (

@@ -409,7 +409,7 @@ export default function HeatmapPage({ stats }) {
             background: C.surface,
             border: `0.5px solid ${C.border}`,
             borderRadius: 20,
-            padding: "60px 48px",
+            padding: "clamp(32px, 6vw, 60px) clamp(20px, 5vw, 48px)",
             textAlign: "center",
             maxWidth: 480,
           }}>
@@ -438,7 +438,7 @@ export default function HeatmapPage({ stats }) {
       <div style={{
         minHeight: "100vh",
         background: C.bg,
-        padding: "40px 48px 80px",
+        padding: "clamp(20px, 4vw, 40px) clamp(12px, 3vw, 48px) 80px",
         fontFamily: FONT,
       }}>
         {/* ── Header ── */}

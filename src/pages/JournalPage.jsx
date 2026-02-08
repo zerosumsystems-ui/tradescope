@@ -442,7 +442,7 @@ export default function JournalPage({ userId }) {
       {/* -- Entries -- */}
       {filtered.length === 0 ? (
         <div style={{
-          textAlign: "center", padding: "64px 28px", color: C.textTertiary,
+          textAlign: "center", padding: "clamp(32px, 6vw, 64px) 20px", color: C.textTertiary,
           background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`,
         }}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 16 }}>

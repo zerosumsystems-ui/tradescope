@@ -518,7 +518,7 @@ export default function ReplayPage({ stats }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 300px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))",
             gap: 24,
             marginBottom: 24,
           }}

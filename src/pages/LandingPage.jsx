@@ -35,8 +35,8 @@ function FeatureCard({ title, tagline, visual, dark = false, wide = false, onCli
       onMouseLeave={() => setHovered(false)}
       style={{
         background: dark ? "#000" : "#111",
-        borderRadius: 28,
-        padding: "48px 40px 44px",
+        borderRadius: 24,
+        padding: "clamp(28px, 5vw, 48px) clamp(20px, 4vw, 40px) clamp(28px, 5vw, 44px)",
         gridColumn: wide ? "1 / -1" : undefined,
         cursor: "pointer",
         overflow: "hidden",
@@ -46,7 +46,7 @@ function FeatureCard({ title, tagline, visual, dark = false, wide = false, onCli
         transform: hovered ? "scale(1.012)" : "scale(1)",
         borderColor: hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
         display: "flex", flexDirection: "column",
-        minHeight: wide ? 340 : 380,
+        minHeight: wide ? "clamp(260px, 40vw, 340px)" : "clamp(300px, 45vw, 380px)",
       }}
     >
       <div style={{ marginBottom: "auto" }}>
@@ -258,7 +258,7 @@ export default function LandingPage() {
 
         {/* ── Row 2: 2-column grid ── */}
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
           gap: 16, marginTop: 16,
         }}>
           <Reveal delay={0}>
@@ -323,7 +323,7 @@ export default function LandingPage() {
 
         {/* ── Row 3: 2-column grid ── */}
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))",
           gap: 16, marginTop: 16,
         }}>
           <Reveal delay={0}>
@@ -456,7 +456,7 @@ export default function LandingPage() {
         </Reveal>
 
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
           gap: 40,
         }}>
           {[
