@@ -66,6 +66,121 @@ const SAMPLE_CSV = `Run Date,Account,Action,Symbol,Security Description,Security
 04/10/2025,Z12345678,YOU BOUGHT,SOFI,SOFI TECHNOLOGIES,Cash,300,10.20,0,0.12,,,-3060.12,04/14/2025
 04/18/2025,Z12345678,YOU SOLD,SOFI,SOFI TECHNOLOGIES,Cash,-300,11.80,0,0.12,,,3539.88,04/22/2025`;
 
+function parseSchwabCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("date") && l.includes("action") && l.includes("symbol") && l.includes("quantity") && l.includes("price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith("Transactions Total")) continue;
+    const vals = line.split(",");
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || "").trim(); });
+    const action = (row["action"] || "").toUpperCase();
+    if (!action.includes("BUY") && !action.includes("SELL")) continue;
+    trades.push({
+      date: row["date"] || "", symbol: (row["symbol"] || "").replace(/\s+/g, ""),
+      description: row["description"] || "", action: action.includes("BUY") ? "BUY" : "SELL",
+      quantity: Math.abs(parseFloat((row["quantity"] || "").replace(/[,$]/g, "")) || 0),
+      price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: parseFloat((row["commission"] || row["commissions & fees"] || "").replace(/[,$]/g, "")) || 0,
+      fees: parseFloat((row["fees"] || "").replace(/[,$]/g, "")) || 0,
+      amount: parseFloat((row["amount"] || "").replace(/[,$]/g, "")) || 0,
+    });
+  }
+  return trades;
+}
+
+function parseIBKRCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if ((l.includes("trades") && l.includes("header")) || (l.includes("date/time") && l.includes("symbol") && l.includes("t. price"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const rawHeaders = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/"/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.toLowerCase().includes("trades,total") || line.toLowerCase().includes("\"trades\",\"total\"")) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    rawHeaders.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const symbol = row["symbol"] || "";
+    if (!symbol) continue;
+    const qty = parseFloat(row["quantity"] || "0") || 0;
+    if (qty === 0) continue;
+    const dateStr = row["date/time"] || row["datetime"] || "";
+    const price = parseFloat(row["t. price"] || row["tradeprice"] || row["price"] || "0") || 0;
+    const comm = Math.abs(parseFloat(row["comm/fee"] || row["ibcommission"] || row["commission"] || "0") || 0);
+    trades.push({
+      date: dateStr.split(",")[0] || dateStr.split(" ")[0] || dateStr,
+      symbol: symbol.split(" ")[0], description: "", action: qty > 0 ? "BUY" : "SELL",
+      quantity: Math.abs(qty), price, commission: comm, fees: 0, amount: Math.abs(qty) * price,
+    });
+  }
+  return trades;
+}
+
+function parseWebullCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("symbol") && (l.includes("side") || l.includes("action")) && (l.includes("qty") || l.includes("quantity")) && l.includes("price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const side = (row["side"] || row["action"] || "").toUpperCase();
+    if (!side.includes("BUY") && !side.includes("SELL")) continue;
+    const filledTime = row["filled time"] || row["time"] || row["date"] || row["filled"] || "";
+    trades.push({
+      date: filledTime.split(" ")[0] || filledTime,
+      symbol: (row["symbol"] || "").replace(/\s+/g, ""), description: row["name"] || "",
+      action: side.includes("BUY") ? "BUY" : "SELL",
+      quantity: Math.abs(parseFloat((row["qty"] || row["quantity"] || row["filled qty"] || "").replace(/[,$]/g, "")) || 0),
+      price: parseFloat((row["avg price"] || row["price"] || row["filled price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: 0, fees: 0, amount: 0,
+    });
+  }
+  return trades;
+}
+
+function parseCSVAuto(csvText) {
+  const lower = csvText.toLowerCase();
+  if (lower.includes("run date") && lower.includes("you bought")) return { trades: parseFidelityCSV(csvText), broker: "Fidelity" };
+  if ((lower.includes("trades") && lower.includes("header")) || (lower.includes("date/time") && lower.includes("t. price"))) return { trades: parseIBKRCSV(csvText), broker: "Interactive Brokers" };
+  if ((lower.includes("side") && lower.includes("avg price")) || (lower.includes("filled qty"))) return { trades: parseWebullCSV(csvText), broker: "Webull" };
+  if (lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date")) {
+    const schwab = parseSchwabCSV(csvText);
+    if (schwab.length) return { trades: schwab, broker: "Schwab" };
+  }
+  const fidelity = parseFidelityCSV(csvText);
+  if (fidelity.length) return { trades: fidelity, broker: "Fidelity" };
+  for (const [fn, name] of [[parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"]]) {
+    const result = fn(csvText);
+    if (result.length) return { trades: result, broker: name };
+  }
+  return { trades: [], broker: "Unknown" };
+}
+
 function parseFidelityCSV(csvText) {
   const lines = csvText.trim().split("\n");
   let headerIdx = -1;
@@ -221,61 +336,79 @@ function ChartBox({ title, children, info }) {
   );
 }
 
-function TradeTableComponent({ trades }) {
+function TradeTableComponent({ trades, strategyTags, onSetStrategy }) {
   const [sortKey, setSortKey] = useState("idx");
   const [sortDir, setSortDir] = useState(1);
   const sorted = useMemo(() => {
     return [...trades].sort((a, b) => {
       let va = a[sortKey], vb = b[sortKey];
       if (sortKey === "buyDate" || sortKey === "sellDate") { va = new Date(va); vb = new Date(vb); }
+      if (sortKey === "strategy") { va = strategyTags?.[`${a.symbol}_${a.buyDate}`] || ""; vb = strategyTags?.[`${b.symbol}_${b.buyDate}`] || ""; }
       if (va < vb) return -1 * sortDir;
       if (va > vb) return 1 * sortDir;
       return 0;
     });
-  }, [trades, sortKey, sortDir]);
+  }, [trades, sortKey, sortDir, strategyTags]);
   const toggle = k => { if (sortKey === k) setSortDir(d => d * -1); else { setSortKey(k); setSortDir(-1); } };
   const th = { padding: "9px 12px", textAlign: "left", fontSize: 10, fontWeight: 600, color: C.textDim, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--mono)", cursor: "pointer", borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap", background: C.surface, position: "sticky", top: 0, zIndex: 1 };
   const td = { padding: "8px 12px", fontSize: 12, fontFamily: "var(--mono)", borderBottom: `1px solid ${C.border}`, color: C.text, whiteSpace: "nowrap" };
+  const cols = [["idx", "#"], ["symbol", "Sym"], ["strategy", "Strategy"], ["buyDate", "Entry"], ["sellDate", "Exit"], ["quantity", "Qty"], ["buyPrice", "Buy"], ["sellPrice", "Sell"], ["rMultiple", "R-Mult"], ["pnl", "P&L $"], ["pnlPercent", "%"], ["holdDays", "Days"]];
   return (
     <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: 520, borderRadius: 8, border: `1px solid ${C.border}` }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1020 }}>
         <thead><tr>
-          {[["idx", "#"], ["symbol", "Sym"], ["buyDate", "Entry"], ["sellDate", "Exit"], ["quantity", "Qty"], ["buyPrice", "Buy"], ["sellPrice", "Sell"], ["rMultiple", "R-Mult"], ["pnl", "P&L $"], ["pnlPercent", "%"], ["holdDays", "Days"]].map(([k, l]) => (
+          {cols.map(([k, l]) => (
             <th key={k} style={th} onClick={() => toggle(k)}>{l} {sortKey === k ? (sortDir > 0 ? "▲" : "▼") : ""}</th>
           ))}
         </tr></thead>
         <tbody>
-          {sorted.map((t, i) => (
-            <tr key={i} style={{ background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent" }}
-              onMouseEnter={e => e.currentTarget.style.background = `${C.accent}08`}
-              onMouseLeave={e => e.currentTarget.style.background = i % 2 ? "rgba(255,255,255,0.01)" : "transparent"}
-            >
-              <td style={{ ...td, color: C.textDim }}>{t.idx}</td>
-              <td style={{ ...td, fontWeight: 700, color: C.accent }}>{t.symbol}</td>
-              <td style={td}>{t.buyDate}</td>
-              <td style={td}>{t.sellDate}</td>
-              <td style={td}>{t.quantity}</td>
-              <td style={td}>${t.buyPrice.toFixed(2)}</td>
-              <td style={td}>${t.sellPrice.toFixed(2)}</td>
-              <td style={{ ...td, fontWeight: 700, color: t.rMultiple >= 0 ? C.green : C.red, fontSize: 13 }}>
-                {t.rMultiple >= 0 ? "+" : ""}{t.rMultiple.toFixed(2)}R
-              </td>
-              <td style={{ ...td, color: t.pnl >= 0 ? C.green : C.red }}>
-                {t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}
-              </td>
-              <td style={{ ...td, color: t.pnlPercent >= 0 ? C.green : C.red }}>
-                {t.pnlPercent >= 0 ? "+" : ""}{t.pnlPercent.toFixed(1)}%
-              </td>
-              <td style={td}>{t.holdDays}d</td>
-            </tr>
-          ))}
+          {sorted.map((t, i) => {
+            const tradeKey = `${t.symbol}_${t.buyDate}`;
+            const strategy = strategyTags?.[tradeKey] || "";
+            return (
+              <tr key={i} style={{ background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent" }}
+                onMouseEnter={e => e.currentTarget.style.background = `${C.accent}08`}
+                onMouseLeave={e => e.currentTarget.style.background = i % 2 ? "rgba(255,255,255,0.01)" : "transparent"}
+              >
+                <td style={{ ...td, color: C.textDim }}>{t.idx}</td>
+                <td style={{ ...td, fontWeight: 700, color: C.accent }}>{t.symbol}</td>
+                <td style={td}>
+                  <select value={strategy} onChange={e => onSetStrategy(tradeKey, e.target.value)} style={{
+                    padding: "3px 4px", background: strategy ? `${C.purple}18` : C.bgAlt, border: `1px solid ${strategy ? `${C.purple}40` : C.border}`,
+                    borderRadius: 4, color: strategy ? C.purple : C.textMuted, fontSize: 10, fontFamily: "var(--mono)",
+                    fontWeight: strategy ? 600 : 400, outline: "none", cursor: "pointer", appearance: "auto",
+                  }}>
+                    <option value="">--</option>
+                    {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </td>
+                <td style={td}>{t.buyDate}</td>
+                <td style={td}>{t.sellDate}</td>
+                <td style={td}>{t.quantity}</td>
+                <td style={td}>${t.buyPrice.toFixed(2)}</td>
+                <td style={td}>${t.sellPrice.toFixed(2)}</td>
+                <td style={{ ...td, fontWeight: 700, color: t.rMultiple >= 0 ? C.green : C.red, fontSize: 13 }}>
+                  {t.rMultiple >= 0 ? "+" : ""}{t.rMultiple.toFixed(2)}R
+                </td>
+                <td style={{ ...td, color: t.pnl >= 0 ? C.green : C.red }}>
+                  {t.pnl >= 0 ? "+" : ""}${t.pnl.toFixed(2)}
+                </td>
+                <td style={{ ...td, color: t.pnlPercent >= 0 ? C.green : C.red }}>
+                  {t.pnlPercent >= 0 ? "+" : ""}{t.pnlPercent.toFixed(1)}%
+                </td>
+                <td style={td}>{t.holdDays}d</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrades, onSettingsChange, initialSettings, user, onSignOut }) {
+const STRATEGY_OPTIONS = ["Breakout", "Mean Reversion", "Momentum", "Earnings Play", "Swing Trade", "Scalp", "Gap Fill", "Trend Follow", "Reversal", "Other"];
+
+export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrades, onSettingsChange, initialSettings, user, onSignOut, onStatsChange }) {
   const [loaded, setLoaded] = useState(false);
   const [matched, setMatched] = useState([]);
   const [activeTab, setActiveTab] = useState("tharp");
@@ -283,7 +416,21 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [riskPct, setRiskPct] = useState(initialSettings?.risk_percent || 1);
   const [accountSize, setAccountSize] = useState(initialSettings?.account_size || 100000);
   const [saveStatus, setSaveStatus] = useState("");
+  const [strategyTags, setStrategyTags] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
+  });
+  const [filterStrategy, setFilterStrategy] = useState("");
+  const [detectedBroker, setDetectedBroker] = useState("");
   const fileRef = useRef(null);
+
+  // Persist strategy tags
+  useEffect(() => {
+    localStorage.setItem("tradescope_strategies", JSON.stringify(strategyTags));
+  }, [strategyTags]);
+
+  const setTradeStrategy = useCallback((tradeKey, strategy) => {
+    setStrategyTags(prev => ({ ...prev, [tradeKey]: strategy }));
+  }, []);
 
   // Load saved trades from DB on mount
   useEffect(() => {
@@ -297,13 +444,13 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   }, []);
 
   const processCSV = useCallback((text) => {
-    const parsed = parseFidelityCSV(text);
+    const { trades: parsed, broker } = parseCSVAuto(text);
     if (!parsed.length) return false;
+    setDetectedBroker(broker);
     const m = matchTrades(parsed);
     if (!m.length) return false;
     setMatched(m);
     setLoaded(true);
-    // Save to database if callback provided
     if (onSaveTrades) {
       setSaveStatus("saving");
       onSaveTrades(parsed).then(() => setSaveStatus("saved")).catch(() => setSaveStatus("error"));
@@ -316,7 +463,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (!processCSV(e.target.result)) alert("Could not parse trades. Ensure this is a Fidelity CSV export.");
+      if (!processCSV(e.target.result)) alert("Could not parse trades. Supported brokers: Fidelity, Schwab, Interactive Brokers, Webull.");
     };
     reader.readAsText(file);
   }, [processCSV]);
@@ -428,6 +575,11 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     };
   }, [matched, riskPerTrade]);
 
+  // Propagate stats to parent for Insights page
+  useEffect(() => {
+    if (onStatsChange) onStatsChange(stats);
+  }, [stats, onStatsChange]);
+
   if (!loaded) {
     return (
       <div style={{ "--mono": "'IBM Plex Mono', monospace", "--heading": "'DM Sans', sans-serif", minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--heading)", color: C.text }}>
@@ -452,8 +604,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           >
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 14 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Drop your Fidelity CSV or click to browse</div>
-            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "var(--mono)" }}>Activity & Orders → Download CSV</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Drop your broker CSV or click to browse</div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "var(--mono)" }}>Supports Fidelity, Schwab, Interactive Brokers, Webull</div>
           </div>
           <div style={{ textAlign: "center", margin: "20px 0", color: C.textMuted, fontSize: 12 }}>or</div>
           <button onClick={() => processCSV(SAMPLE_CSV)} style={{ width: "100%", padding: "13px 24px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--heading)", transition: "all 0.2s" }}
@@ -490,15 +642,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   return (
     <div style={{ "--mono": "'IBM Plex Mono', monospace", "--heading": "'DM Sans', sans-serif", minHeight: "100vh", background: C.bg, fontFamily: "var(--heading)", color: C.text }}>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: `${C.bg}dd`, backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 7, background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" /></svg>
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.03em" }}>TradeScope</span>
-          <span style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)", marginLeft: 4 }}>1R = ${riskPerTrade.toLocaleString()}</span>
-        </div>
-        <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: "6px 14px", border: "none", borderRadius: 5, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--heading)", background: activeTab === tab.id ? `${C.accent}18` : "transparent", color: activeTab === tab.id ? C.accent : C.textDim, transition: "all 0.15s" }}>{tab.label}</button>
           ))}
@@ -510,13 +655,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "var(--mono)" }}>Risk %</label>
             <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 48, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "var(--mono)", outline: "none" }} />
           </div>
+          <span style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)" }}>1R = ${riskPerTrade.toLocaleString()}</span>
           {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow, fontFamily: "var(--mono)" }}>Saving...</span>}
           {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green, fontFamily: "var(--mono)" }}>✓ Saved</span>}
           {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red, fontFamily: "var(--mono)" }}>Save failed</span>}
-          {user && <span style={{ fontSize: 10, color: C.textDim, fontFamily: "var(--mono)" }}>{user.email}</span>}
           <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 5, background: "transparent", color: C.textDim, fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)" }}>New Import</button>
           {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "5px 10px", border: `1px solid ${C.red}33`, borderRadius: 5, background: "transparent", color: C.red, fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)" }}>Clear DB</button>}
-          {onSignOut && <button onClick={onSignOut} style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 5, background: "transparent", color: C.textDim, fontSize: 10, cursor: "pointer", fontFamily: "var(--mono)" }}>Sign Out</button>}
         </div>
       </div>
 
@@ -650,12 +794,31 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           </div>
         )}
 
-        {activeTab === "trades" && stats && (
-          <div>
-            <div style={{ marginBottom: 12, fontSize: 11, color: C.textDim, fontFamily: "var(--mono)" }}>{stats.n} closed trades · 1R = ${riskPerTrade.toLocaleString()}</div>
-            <TradeTableComponent trades={stats.tradeData} />
-          </div>
-        )}
+        {activeTab === "trades" && stats && (() => {
+          const filteredTrades = filterStrategy
+            ? stats.tradeData.filter(t => strategyTags[`${t.symbol}_${t.buyDate}`] === filterStrategy)
+            : stats.tradeData;
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)" }}>
+                  {filteredTrades.length} {filterStrategy ? "filtered" : "closed"} trades · 1R = ${riskPerTrade.toLocaleString()}
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "var(--mono)" }}>Strategy:</label>
+                  <select value={filterStrategy} onChange={e => setFilterStrategy(e.target.value)} style={{
+                    padding: "4px 8px", background: C.bgAlt, border: `1px solid ${C.border}`,
+                    borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "var(--mono)", outline: "none", appearance: "auto",
+                  }}>
+                    <option value="">All</option>
+                    {STRATEGY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <TradeTableComponent trades={filteredTrades} strategyTags={strategyTags} onSetStrategy={setTradeStrategy} />
+            </div>
+          );
+        })()}
 
         {activeTab === "symbols" && stats && (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>

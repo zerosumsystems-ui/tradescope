@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import * as db from './db'
 import TradeDashboard from './Dashboard'
+import LandingPage from './pages/LandingPage'
+import JournalPage from './pages/JournalPage'
+import CalculatorPage from './pages/CalculatorPage'
+import InsightsPage from './pages/InsightsPage'
+import PricingPage from './pages/PricingPage'
+import Layout from './components/Layout'
 
 const C = {
   bg: "#06090f", surface: "#0d1117", border: "#1b2433", text: "#e0e6f0",
@@ -10,12 +17,14 @@ const C = {
 }
 
 function AuthScreen({ onAuth }) {
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [searchParams] = useSearchParams()
+  const [isSignUp, setIsSignUp] = useState(searchParams.get('signup') === '1')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [confirmMsg, setConfirmMsg] = useState('')
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,6 +39,7 @@ function AuthScreen({ onAuth }) {
       } else {
         const data = await db.signIn(email, password)
         onAuth(data.session)
+        navigate('/dashboard')
       }
     } catch (err) {
       setError(err.message)
@@ -99,6 +109,12 @@ function AuthScreen({ onAuth }) {
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create one"}
           </button>
         </div>
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <button onClick={() => navigate('/')} style={{
+            background: 'none', border: 'none', color: C.textDim, fontSize: 12,
+            cursor: 'pointer', fontFamily: "'Sora', sans-serif",
+          }}>Back to home</button>
+        </div>
       </div>
     </div>
   )
@@ -109,6 +125,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [savedTrades, setSavedTrades] = useState([])
   const [settings, setSettings] = useState({ account_size: 100000, risk_percent: 1 })
+  const [dashboardStats, setDashboardStats] = useState(null)
 
   // Check existing session on mount
   useEffect(() => {
@@ -132,7 +149,6 @@ export default function App() {
         db.loadTrades(userId),
         db.loadSettings(userId),
       ])
-      // Convert DB rows to the format the dashboard expects
       const formatted = trades.map(t => ({
         date: t.date,
         symbol: t.symbol,
@@ -203,19 +219,36 @@ export default function App() {
     )
   }
 
-  if (!session) {
-    return <AuthScreen onAuth={setSession} />
-  }
-
   return (
-    <TradeDashboard
-      savedTrades={savedTrades}
-      onSaveTrades={handleSaveTrades}
-      onClearTrades={handleClearTrades}
-      onSettingsChange={handleSettingsChange}
-      initialSettings={settings}
-      user={session.user}
-      onSignOut={handleSignOut}
-    />
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+      <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <AuthScreen onAuth={setSession} />} />
+
+      {/* Public routes */}
+      <Route path="/pricing" element={<PricingPage />} />
+
+      {/* Authenticated routes */}
+      <Route element={session ? <Layout user={session.user} onSignOut={handleSignOut} /> : <Navigate to="/login" replace />}>
+        <Route path="/dashboard" element={
+          <TradeDashboard
+            savedTrades={savedTrades}
+            onSaveTrades={handleSaveTrades}
+            onClearTrades={handleClearTrades}
+            onSettingsChange={handleSettingsChange}
+            initialSettings={settings}
+            user={session?.user}
+            onSignOut={handleSignOut}
+            onStatsChange={setDashboardStats}
+          />
+        } />
+        <Route path="/journal" element={<JournalPage userId={session?.user?.id} />} />
+        <Route path="/calculator" element={<CalculatorPage />} />
+        <Route path="/insights" element={<InsightsPage stats={dashboardStats} />} />
+      </Route>
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
