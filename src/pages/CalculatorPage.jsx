@@ -179,7 +179,7 @@ export default function CalculatorPage() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 24, alignItems: "start" }}>
         {/* ── Left: Controls ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20, position: "sticky", top: 80 }}>
           {/* System Parameters */}

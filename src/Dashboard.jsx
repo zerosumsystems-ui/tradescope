@@ -856,19 +856,19 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
       {/* ── Hero summary ── */}
       {stats && (
-        <div style={{ padding: "40px 24px 0", maxWidth: 1320, margin: "0 auto" }}>
-          <div style={{
+        <div style={{ padding: "28px 16px 0", maxWidth: 1320, margin: "0 auto" }}>
+          <div className="dash-hero" style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             flexWrap: "wrap", gap: 24, marginBottom: 12,
           }}>
             <div>
               <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>System Quality Number</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: "-0.05em", color: stats.sqnRating.color, lineHeight: 1 }}>{stats.sqn.toFixed(2)}</span>
+                <span className="dash-hero-sqn" style={{ fontSize: 56, fontWeight: 700, letterSpacing: "-0.05em", color: stats.sqnRating.color, lineHeight: 1 }}>{stats.sqn.toFixed(2)}</span>
                 <span style={{ fontSize: 14, fontWeight: 600, color: stats.sqnRating.color, padding: "5px 16px", borderRadius: 980, background: `${stats.sqnRating.color}12` }}>{stats.sqnRating.label}</span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+            <div className="dash-hero-stats" style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               {[
                 { l: "Expectancy", v: `${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(3)}R`, c: stats.meanR >= 0 ? C.green : C.red },
                 { l: "Win Rate", v: `${stats.winRate}%`, c: stats.winRate >= 50 ? C.green : C.red },
@@ -887,9 +887,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       )}
 
       {/* ── Toolbar ── */}
-      <div style={{ padding: "16px 24px 0", maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="dash-toolbar" style={{ padding: "16px 16px 0", maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         {/* Tabs */}
-        <div style={{ display: "inline-flex", gap: 2, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3 }}>
+        <div className="dash-tabs" style={{ display: "inline-flex", gap: 2, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3 }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding: "8px 18px", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 500,
@@ -901,7 +901,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           ))}
         </div>
         {/* Controls */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "6px 12px" }}>
             <label style={{ fontSize: 10, color: C.textMuted }}>Acct</label>
             <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
@@ -920,11 +920,11 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         </div>
       </div>
 
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "20px 24px" }}>
+      <div className="dash-content" style={{ maxWidth: 1320, margin: "0 auto", padding: "20px 16px" }}>
 
         {activeTab === "tharp" && stats && (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
+            <div className="stagger metric-grid-lg" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
               <MetricCard accent label="System Quality Number (SQN®)" value={stats.sqn.toFixed(2)} color={stats.sqnRating.color} rating={stats.sqnRating.label} ratingColor={stats.sqnRating.color} sub="√min(n,100) × (Mean R / Std R)" />
               <MetricCard label="Expectancy (Mean R)" value={`${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(3)}R`} color={stats.meanR >= 0 ? C.green : C.red} sub="Avg profit per trade in risk units" />
               <MetricCard label="Expectancy Ratio" value={stats.expectancyRatio.toFixed(3)} color={stats.expRating.color} rating={stats.expRating.label} ratingColor={stats.expRating.color} sub="Mean R / Std Dev R (quality w/o n)" />
@@ -932,7 +932,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <MetricCard label="Payoff Ratio" value={stats.payoffRatio} color={parseFloat(stats.payoffRatio) >= 1.5 ? C.green : C.yellow} sub={`Avg Win ${stats.avgWinR}R / Avg Loss ${stats.avgLossR}R`} />
               <MetricCard label="Profit Factor (R)" value={stats.profitFactorR} color={parseFloat(stats.profitFactorR) >= 1.5 ? C.green : C.yellow} sub="Σ Winning R / |Σ Losing R|" />
             </div>
-            <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
+            <div className="stagger metric-grid-sm" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
               <MetricCard small label="Win Rate" value={`${stats.winRate}%`} color={stats.winRate >= 50 ? C.green : C.red} sub={`${stats.wins}W / ${stats.losses}L`} />
               <MetricCard small label="Total R Earned" value={`${stats.totalR >= 0 ? "+" : ""}${stats.totalR}R`} color={stats.totalR >= 0 ? C.green : C.red} sub={`$${stats.totalPnL.toLocaleString()}`} />
               <MetricCard small label="Max Drawdown (R)" value={`${stats.maxDDR}R`} color={stats.maxDDR > 5 ? C.red : C.yellow} sub={`$${Math.round(stats.maxDDR * riskPerTrade).toLocaleString()}`} />

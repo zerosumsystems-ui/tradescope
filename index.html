@@ -133,18 +133,55 @@
       details[open] summary svg { transform: rotate(180deg); }
       details summary svg { transition: transform 0.2s ease; }
 
-      /* Mobile responsive basics */
+      /* ── Mobile responsive ── */
+
+      /* Hide nav scrollbar */
+      .nav-scroll::-webkit-scrollbar { display: none; }
+
+      /* Tablet */
       @media (max-width: 768px) {
-        h1 { font-size: clamp(28px, 7vw, 48px) !important; }
-        h2 { font-size: clamp(24px, 5vw, 36px) !important; }
+        h1 { font-size: clamp(28px, 8vw, 48px) !important; }
+        h2 { font-size: clamp(24px, 6vw, 36px) !important; }
+
+        /* Landing page: reduce card min-height + padding */
+        .landing-grid { grid-template-columns: 1fr !important; }
       }
 
+      /* Mobile */
       @media (max-width: 640px) {
-        nav > div {
-          flex-direction: column !important;
-          gap: 8px !important;
-          padding: 8px 16px !important;
-        }
+        /* Hide email in nav */
+        .hide-mobile { display: none !important; }
+
+        /* Nav: icons only */
+        .nav-label { display: none; }
+
+        /* Dashboard hero: stack vertically */
+        .dash-hero { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
+        .dash-hero-stats { gap: 16px !important; }
+        .dash-hero-sqn { font-size: 40px !important; }
+
+        /* Dashboard toolbar: stack */
+        .dash-toolbar { flex-direction: column !important; align-items: stretch !important; }
+        .dash-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .dash-tabs::-webkit-scrollbar { display: none; }
+        .dash-tabs > div { width: max-content; min-width: 100%; }
+        .dash-controls { flex-wrap: wrap !important; }
+
+        /* Metric grids: 2 columns on phone */
+        .metric-grid-lg { grid-template-columns: repeat(2, 1fr) !important; }
+        .metric-grid-sm { grid-template-columns: repeat(2, 1fr) !important; }
+
+        /* Charts: reduce height */
+        .recharts-responsive-container { min-height: 0 !important; }
+
+        /* General padding reduction */
+        .dash-content { padding: 12px 12px !important; }
+      }
+
+      /* Small phone */
+      @media (max-width: 380px) {
+        .metric-grid-lg { grid-template-columns: 1fr !important; }
+        .metric-grid-sm { grid-template-columns: repeat(2, 1fr) !important; }
       }
 
       /* Number tabular spacing */
