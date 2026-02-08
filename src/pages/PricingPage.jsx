@@ -56,7 +56,7 @@ export default function PricingPage() {
       features: [
         "Everything in Pro", "AI Trade Coach — personalized insights",
         "Automated pattern detection",
-        "\"What-if\" trade replay simulator",
+        "\"What-if\" scenario simulator",
         "Tax reporting (wash sales, Schedule D)",
         "Custom report builder", "Daily email + SMS alerts",
         "Drawdown & streak warnings", "API access", "Priority support",

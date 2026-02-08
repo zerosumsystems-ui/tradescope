@@ -629,67 +629,6 @@ export default function LandingPage() {
           }
         />
 
-        {/* ── Trade Replay ── */}
-        <StickyFeature
-          dark
-          subtitle="Trade Replay"
-          title={<>Relive every trade.<br />Learn from each one.</>}
-          description="Step through your trading history with playback controls and live running statistics. See your equity curve build in real time."
-          cta={{ label: "Learn more", to: "/login?signup=1" }}
-          visual={
-            <div style={{
-              background: "#111", borderRadius: 20, padding: "32px",
-              border: "0.5px solid rgba(255,255,255,0.06)",
-            }}>
-              <div style={{ fontSize: 11, color: "#48484a", fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Replay Controls
-              </div>
-              {/* Progress bar */}
-              <div style={{
-                height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 20,
-                overflow: "hidden",
-              }}>
-                <div style={{ width: "62%", height: "100%", borderRadius: 2, background: "#2997ff" }} />
-              </div>
-              {/* Controls */}
-              <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-                {[
-                  { icon: "M19 20L9 12l10-8v16z", size: 18 },
-                  { icon: "M5 3l14 9-14 9V3z", size: 24, accent: true },
-                  { icon: "M5 4l10 8-10 8V4z", size: 18 },
-                ].map((btn, i) => (
-                  <div key={i} style={{
-                    width: btn.accent ? 52 : 36, height: btn.accent ? 52 : 36,
-                    borderRadius: btn.accent ? 26 : 10,
-                    background: btn.accent ? "#2997ff" : "rgba(255,255,255,0.05)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <svg width={btn.size} height={btn.size} viewBox="0 0 24 24" fill={btn.accent ? "#fff" : "#86868b"} stroke="none">
-                      <path d={btn.icon} />
-                    </svg>
-                  </div>
-                ))}
-              </div>
-              {/* Mini stats */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                {[
-                  { l: "Trade", v: "47/76" },
-                  { l: "Running P&L", v: "+$3,420" },
-                  { l: "Win Rate", v: "64%" },
-                ].map(s => (
-                  <div key={s.l} style={{
-                    background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "12px",
-                    textAlign: "center",
-                  }}>
-                    <div style={{ fontSize: 9, color: "#48484a", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{s.l}</div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#f5f5f7", letterSpacing: "-0.02em" }}>{s.v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          }
-        />
-
         {/* ── Multi-broker (full width, centered) ── */}
         <section style={{
           minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center",
@@ -823,7 +762,7 @@ export default function LandingPage() {
                   "7 broker imports",
                   "Trade journal with tagging",
                   "Performance heatmap",
-                  "Trade replay",
+                  "Risk of Ruin simulator",
                   "All chart types",
                   "Monthly PDF reports",
                 ]}
