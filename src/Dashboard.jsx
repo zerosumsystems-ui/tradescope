@@ -479,19 +479,23 @@ const TT = ({ active, payload, label, formatter }) => {
   );
 };
 
-function MetricCard({ label, value, sub, color, rating, ratingColor, small }) {
+function MetricCard({ label, value, sub, color, rating, ratingColor, small, accent }) {
   return (
     <div className="card-hover" style={{
-      background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 16,
-      padding: small ? "16px 18px" : "20px 22px", display: "flex", flexDirection: "column", gap: 6,
+      background: accent ? "rgba(41,151,255,0.04)" : C.surface,
+      border: `0.5px solid ${accent ? "rgba(41,151,255,0.15)" : C.border}`,
+      borderRadius: 20, padding: small ? "18px 20px" : "24px 26px",
+      display: "flex", flexDirection: "column", gap: 8,
       minWidth: 0, animation: "slideUp 0.5s ease both",
+      position: "relative", overflow: "hidden",
     }}>
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 500 }}>{label}</div>
+      {accent && <div style={{ position: "absolute", top: -40, right: -40, width: 120, height: 120, borderRadius: "50%", background: "rgba(41,151,255,0.04)", filter: "blur(30px)", pointerEvents: "none" }} />}
+      <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span className="tabular-nums" style={{ fontSize: small ? 22 : 28, fontWeight: 700, color: color || C.text, letterSpacing: "-0.03em", animation: "countUp 0.4s ease both" }}>{value}</span>
-        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, padding: "3px 10px", borderRadius: 980, background: `${ratingColor || C.accent}15`, letterSpacing: "0.02em" }}>{rating}</span>}
+        <span className="tabular-nums" style={{ fontSize: small ? 24 : 32, fontWeight: 700, color: color || C.text, letterSpacing: "-0.035em", animation: "countUp 0.4s ease both" }}>{value}</span>
+        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, padding: "4px 12px", borderRadius: 980, background: `${ratingColor || C.accent}12`, letterSpacing: "0.02em" }}>{rating}</span>}
       </div>
-      {sub && <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.45, fontWeight: 400 }}>{sub}</div>}
     </div>
   );
 }
@@ -499,16 +503,19 @@ function MetricCard({ label, value, sub, color, rating, ratingColor, small }) {
 function ChartBox({ title, children, info }) {
   const [showInfo, setShowInfo] = useState(false);
   return (
-    <div style={{ background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}`, padding: "20px 20px 12px", position: "relative" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.06em", textTransform: "uppercase" }}>{title}</div>
+    <div style={{ background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`, padding: "24px 24px 16px", position: "relative" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>{title}</div>
         {info && (
           <div style={{ position: "relative" }}>
-            <button onClick={() => setShowInfo(!showInfo)} style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 4, color: C.textDim, fontSize: 10, padding: "2px 6px", cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>?</button>
+            <button onClick={() => setShowInfo(!showInfo)} style={{ background: "rgba(255,255,255,0.04)", border: `0.5px solid ${C.border}`, borderRadius: 980, color: C.textDim, fontSize: 10, padding: "3px 10px", cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, transition: "all 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+            >?</button>
             {showInfo && (
-              <div style={{ position: "absolute", right: 0, top: 24, width: 280, background: C.surfaceRaised, border: `1px solid ${C.borderLight}`, borderRadius: 8, padding: 14, fontSize: 11, color: C.textDim, lineHeight: 1.6, zIndex: 20, boxShadow: "0 12px 40px rgba(0,0,0,0.5)", fontFamily: "'Inter', -apple-system, sans-serif" }}>
+              <div style={{ position: "absolute", right: 0, top: 28, width: 300, background: "rgba(26,26,26,0.95)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `0.5px solid ${C.borderLight}`, borderRadius: 14, padding: "16px 18px", fontSize: 12, color: C.textDim, lineHeight: 1.6, zIndex: 20, boxShadow: "0 16px 48px rgba(0,0,0,0.6)", fontFamily: "'Inter', -apple-system, sans-serif" }}>
                 {info}
-                <button onClick={() => setShowInfo(false)} style={{ display: "block", marginTop: 8, background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: 10, fontFamily: "'Inter', -apple-system, sans-serif" }}>close</button>
+                <button onClick={() => setShowInfo(false)} style={{ display: "block", marginTop: 10, background: "none", border: "none", color: C.accent, cursor: "pointer", fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, padding: 0 }}>Close</button>
               </div>
             )}
           </div>
@@ -765,38 +772,59 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
   if (!loaded) {
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', -apple-system, sans-serif", color: C.text, position: "relative", overflow: "hidden" }}>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        <div style={{ width: "100%", maxWidth: 540, padding: 28 }}>
-          <div style={{ textAlign: "center", marginBottom: 44 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 10, background: `linear-gradient(135deg, ${C.accent}, ${C.cyan})`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 30px rgba(0,229,199,0.2)` }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" /></svg>
-              </div>
-              <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.04em" }}>TradeScope</span>
-            </div>
-            <p style={{ color: C.textDim, fontSize: 14, maxWidth: 380, margin: "0 auto", lineHeight: 1.6 }}>
-              Van Tharp analytics — R-multiples, SQN, expectancy, expectunity, and complete system quality analysis
+        {/* Ambient glow */}
+        <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: "50vw", maxWidth: 500, height: 400, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(41,151,255,0.04) 0%, transparent 70%)", pointerEvents: "none", filter: "blur(60px)" }} />
+        <div style={{ width: "100%", maxWidth: 480, padding: 28, position: "relative" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.04em", marginBottom: 12 }}>
+              Import your trades.
+            </h1>
+            <p style={{ color: C.textDim, fontSize: 17, maxWidth: 340, margin: "0 auto", lineHeight: 1.5, fontWeight: 400 }}>
+              Drop a CSV and see your Van Tharp analytics in seconds.
             </p>
           </div>
-          <div style={{ border: `1.5px dashed ${dragOver ? C.accent : "rgba(255,255,255,0.12)"}`, borderRadius: 20, padding: "52px 32px", textAlign: "center", cursor: "pointer", background: dragOver ? "rgba(41,151,255,0.04)" : "transparent", transition: "all 0.3s ease" }}
+
+          <div style={{
+            border: `1px solid ${dragOver ? "rgba(41,151,255,0.4)" : C.border}`, borderRadius: 24,
+            padding: "56px 36px", textAlign: "center", cursor: "pointer",
+            background: dragOver ? "rgba(41,151,255,0.03)" : C.surface,
+            transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
+            boxShadow: dragOver ? "0 0 0 4px rgba(41,151,255,0.08)" : "none",
+          }}
             onClick={() => fileRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
           >
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 14 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Drop your broker CSV or click to browse</div>
-            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "'Inter', -apple-system, sans-serif" }}>Supports Fidelity, Schwab, IBKR, Webull, Tradovate, AMP, TradeLocker</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(41,151,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em" }}>Drop your CSV here</div>
+            <div style={{ fontSize: 13, color: C.textDim, marginTop: 8, fontWeight: 400 }}>or click to browse</div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
+              {["Fidelity", "Schwab", "IBKR", "Webull", "Tradovate", "AMP", "TradeLocker"].map(b => (
+                <span key={b} style={{ padding: "4px 10px", borderRadius: 980, fontSize: 10, fontWeight: 500, background: "rgba(255,255,255,0.04)", color: C.textMuted, border: `0.5px solid ${C.border}` }}>{b}</span>
+              ))}
+            </div>
           </div>
+
           <div style={{ textAlign: "center", margin: "20px 0", color: C.textMuted, fontSize: 12 }}>or</div>
-          <button onClick={() => processCSV(SAMPLE_CSV)} style={{ width: "100%", padding: "13px 24px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", transition: "all 0.2s" }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
-            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-          >Load Sample Data (20 trades)</button>
-          <div style={{ marginTop: 28, padding: "16px 18px", background: C.surface, borderRadius: 10, border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif", marginBottom: 8 }}>R-value configuration</div>
+
+          <button onClick={() => processCSV(SAMPLE_CSV)} style={{
+            width: "100%", padding: "16px 24px", border: `0.5px solid rgba(255,255,255,0.12)`, borderRadius: 14,
+            background: "transparent", color: C.text, fontSize: 15, fontWeight: 600, cursor: "pointer",
+            fontFamily: "'Inter', -apple-system, sans-serif", transition: "all 0.3s cubic-bezier(0.25, 1, 0.5, 1)",
+            letterSpacing: "-0.01em",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+          >Try with sample data</button>
+
+          <div style={{ marginTop: 28, padding: "20px 22px", background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}` }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif", marginBottom: 10 }}>R-value configuration</div>
             <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", display: "block", marginBottom: 4 }}>Account Size ($)</label>
@@ -825,25 +853,70 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ borderBottom: `0.5px solid ${C.border}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.02)", flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+
+      {/* ── Hero summary ── */}
+      {stats && (
+        <div style={{ padding: "40px 24px 0", maxWidth: 1320, margin: "0 auto" }}>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexWrap: "wrap", gap: 24, marginBottom: 12,
+          }}>
+            <div>
+              <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>System Quality Number</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                <span style={{ fontSize: 56, fontWeight: 700, letterSpacing: "-0.05em", color: stats.sqnRating.color, lineHeight: 1 }}>{stats.sqn.toFixed(2)}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: stats.sqnRating.color, padding: "5px 16px", borderRadius: 980, background: `${stats.sqnRating.color}12` }}>{stats.sqnRating.label}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+              {[
+                { l: "Expectancy", v: `${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(3)}R`, c: stats.meanR >= 0 ? C.green : C.red },
+                { l: "Win Rate", v: `${stats.winRate}%`, c: stats.winRate >= 50 ? C.green : C.red },
+                { l: "Total R", v: `${stats.totalR >= 0 ? "+" : ""}${stats.totalR}R`, c: stats.totalR >= 0 ? C.green : C.red },
+                { l: "Trades", v: stats.n, c: C.text },
+              ].map(s => (
+                <div key={s.l}>
+                  <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>{s.l}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: s.c, letterSpacing: "-0.03em" }}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ height: "0.5px", background: C.border, margin: "20px 0 0" }} />
+        </div>
+      )}
+
+      {/* ── Toolbar ── */}
+      <div style={{ padding: "16px 24px 0", maxWidth: 1320, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        {/* Tabs */}
+        <div style={{ display: "inline-flex", gap: 2, background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3 }}>
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: "7px 16px", border: "none", borderRadius: 980, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", background: activeTab === tab.id ? "rgba(255,255,255,0.1)" : "transparent", color: activeTab === tab.id ? C.text : C.textDim, transition: "all 0.2s ease" }}>{tab.label}</button>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              padding: "8px 18px", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 500,
+              cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif",
+              background: activeTab === tab.id ? "rgba(255,255,255,0.1)" : "transparent",
+              color: activeTab === tab.id ? C.text : C.textMuted,
+              transition: "all 0.2s ease", letterSpacing: "-0.01em",
+            }}>{tab.label}</button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Acct $</label>
-            <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 80, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
-            <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Risk %</label>
-            <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 48, padding: "4px 6px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+        {/* Controls */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "6px 12px" }}>
+            <label style={{ fontSize: 10, color: C.textMuted }}>Acct</label>
+            <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            <label style={{ fontSize: 10, color: C.textMuted }}>Risk</label>
+            <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 44, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            <span style={{ fontSize: 10, color: C.textDim }}>1R=${riskPerTrade.toLocaleString()}</span>
           </div>
-          <span style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>1R = ${riskPerTrade.toLocaleString()}</span>
-          {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow, fontFamily: "'Inter', -apple-system, sans-serif" }}>Saving...</span>}
-          {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green, fontFamily: "'Inter', -apple-system, sans-serif" }}>✓ Saved</span>}
-          {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red, fontFamily: "'Inter', -apple-system, sans-serif" }}>Save failed</span>}
-          <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 5, background: "transparent", color: C.textDim, fontSize: 10, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>New Import</button>
-          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "5px 10px", border: `1px solid ${C.red}33`, borderRadius: 5, background: "transparent", color: C.red, fontSize: 10, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif" }}>Clear DB</button>}
+          {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow }}>Saving...</span>}
+          {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green }}>Saved</span>}
+          {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red }}>Save failed</span>}
+          <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "6px 14px", border: `0.5px solid ${C.border}`, borderRadius: 10, background: "transparent", color: C.textDim, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, transition: "all 0.2s" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+          >New Import</button>
+          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "6px 14px", border: `0.5px solid rgba(255,59,48,0.2)`, borderRadius: 10, background: "transparent", color: C.red, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500 }}>Clear</button>}
         </div>
       </div>
 
@@ -852,7 +925,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         {activeTab === "tharp" && stats && (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
-              <MetricCard label="System Quality Number (SQN®)" value={stats.sqn.toFixed(2)} color={stats.sqnRating.color} rating={stats.sqnRating.label} ratingColor={stats.sqnRating.color} sub="√min(n,100) × (Mean R / Std R)" />
+              <MetricCard accent label="System Quality Number (SQN®)" value={stats.sqn.toFixed(2)} color={stats.sqnRating.color} rating={stats.sqnRating.label} ratingColor={stats.sqnRating.color} sub="√min(n,100) × (Mean R / Std R)" />
               <MetricCard label="Expectancy (Mean R)" value={`${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(3)}R`} color={stats.meanR >= 0 ? C.green : C.red} sub="Avg profit per trade in risk units" />
               <MetricCard label="Expectancy Ratio" value={stats.expectancyRatio.toFixed(3)} color={stats.expRating.color} rating={stats.expRating.label} ratingColor={stats.expRating.color} sub="Mean R / Std Dev R (quality w/o n)" />
               <MetricCard label="Expectunity" value={`${stats.expectunity >= 0 ? "+" : ""}${stats.expectunity.toFixed(2)}R / mo`} color={stats.expectunity >= 0 ? C.green : C.red} sub={`Expectancy × ${stats.tradesPerMonth} trades/mo`} />
@@ -1007,14 +1080,17 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
               {stats.bySymbol.map(s => (
-                <div key={s.symbol} style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={s.symbol} className="card-hover" style={{
+                  background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`,
+                  padding: "22px 24px", display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: C.accent, fontFamily: "'Inter', -apple-system, sans-serif" }}>{s.symbol}</div>
-                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>{s.trades} trades · {s.winRate}% WR</div>
+                    <div style={{ fontWeight: 700, fontSize: 18, color: C.accent, letterSpacing: "-0.02em" }}>{s.symbol}</div>
+                    <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{s.trades} trades · {s.winRate}% win rate</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Inter', -apple-system, sans-serif", color: s.totalR >= 0 ? C.green : C.red }}>{s.totalR >= 0 ? "+" : ""}{s.totalR}R</div>
-                    <div style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>avg {s.avgR}R · ${s.totalPnl.toLocaleString()}</div>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: s.totalR >= 0 ? C.green : C.red, letterSpacing: "-0.03em" }}>{s.totalR >= 0 ? "+" : ""}{s.totalR}R</div>
+                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>avg {s.avgR}R · ${s.totalPnl.toLocaleString()}</div>
                   </div>
                 </div>
               ))}
