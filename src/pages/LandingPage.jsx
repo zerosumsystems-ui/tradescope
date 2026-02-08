@@ -87,13 +87,6 @@ function FeatureCard({ title, tagline, visual, dark = false, wide = false, onCli
    ════════════════════════════════════════════════════ */
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [navSolid, setNavSolid] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const go = (path) => navigate(path);
 
@@ -106,12 +99,8 @@ export default function LandingPage() {
 
       {/* ── NAV ── */}
       <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        backdropFilter: "saturate(180%) blur(20px)",
-        WebkitBackdropFilter: "saturate(180%) blur(20px)",
-        background: navSolid ? "rgba(0,0,0,0.94)" : "transparent",
-        borderBottom: navSolid ? "0.5px solid rgba(255,255,255,0.06)" : "0.5px solid transparent",
-        transition: "background 0.5s ease, border-color 0.5s ease",
+        background: "#000",
+        borderBottom: "0.5px solid rgba(255,255,255,0.06)",
       }}>
         <div style={{
           maxWidth: 1024, margin: "0 auto", padding: "14px 22px",
@@ -146,7 +135,7 @@ export default function LandingPage() {
          HERO
          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{
-        paddingTop: "clamp(120px, 18vh, 200px)",
+        paddingTop: "clamp(60px, 10vh, 120px)",
         paddingBottom: "clamp(60px, 8vh, 100px)",
         textAlign: "center",
         position: "relative",
