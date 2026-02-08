@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 
 const C = {
-  bg: "#06090f", bgAlt: "#0b1018", surface: "#0f1520", surfaceRaised: "#151d2b",
-  border: "#1a2438", borderLight: "#243352", text: "#dfe6f0", textDim: "#6b7d9a",
-  textMuted: "#3d4f6a", accent: "#00e5c7", green: "#00e5a0", red: "#ff4d6a",
-  yellow: "#ffc942", orange: "#ff8c42", purple: "#9b7dff", cyan: "#00c2ff", white: "#ffffff",
+  bg: "#000000", surface: "#111111", surfaceRaised: "#1a1a1a",
+  border: "rgba(255,255,255,0.06)", borderHover: "rgba(255,255,255,0.12)",
+  text: "#f5f5f7", textSecondary: "#a1a1a6", textTertiary: "#6e6e73",
+  accent: "#2997ff", green: "#34c759", red: "#ff3b30",
+  yellow: "#ffcc00", purple: "#af52de", cyan: "#5ac8fa", white: "#ffffff",
 };
 
 const EMOTIONS = ["Confident", "Fearful", "Greedy", "Patient", "Impulsive", "Disciplined", "Anxious", "Calm", "FOMO", "Revenge"];
@@ -13,11 +14,11 @@ const STRATEGIES = ["Breakout", "Mean Reversion", "Momentum", "Earnings Play", "
 function EmotionTag({ label, selected, onClick }) {
   return (
     <button onClick={onClick} style={{
-      padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-      fontFamily: "var(--mono)", cursor: "pointer", transition: "all 0.15s",
-      border: `1px solid ${selected ? C.accent : C.border}`,
+      padding: "5px 12px", borderRadius: 980, fontSize: 12, fontWeight: 500,
+      fontFamily: "'Inter', -apple-system, sans-serif", cursor: "pointer", transition: "all 0.15s",
+      border: `0.5px solid ${selected ? C.accent : C.border}`,
       background: selected ? `${C.accent}18` : "transparent",
-      color: selected ? C.accent : C.textDim,
+      color: selected ? C.accent : C.textSecondary,
     }}>{label}</button>
   );
 }
@@ -47,31 +48,31 @@ function JournalEntryForm({ entry, onSave, onCancel }) {
   };
 
   const inputStyle = {
-    width: "100%", padding: "10px 12px", background: C.bgAlt, border: `1px solid ${C.border}`,
-    borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "var(--mono)",
+    width: "100%", padding: "11px 14px", background: C.surfaceRaised, border: `0.5px solid ${C.border}`,
+    borderRadius: 12, color: C.text, fontSize: 14, fontFamily: "'Inter', -apple-system, sans-serif",
     outline: "none", boxSizing: "border-box", transition: "border-color 0.2s",
   };
   const labelStyle = {
-    fontSize: 10, color: C.textDim, fontFamily: "var(--mono)",
-    letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 6,
+    fontSize: 11, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif",
+    letterSpacing: "0.02em", textTransform: "uppercase", display: "block", marginBottom: 8, fontWeight: 500,
   };
 
   return (
     <div style={{
-      background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`,
-      padding: 24,
+      background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`,
+      padding: 28,
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "-0.02em" }}>
           {entry ? "Edit Entry" : "New Journal Entry"}
         </h3>
         <button onClick={onCancel} style={{
-          background: "none", border: "none", color: C.textDim, cursor: "pointer",
-          fontSize: 18, fontFamily: "var(--mono)",
+          background: "none", border: "none", color: C.textTertiary, cursor: "pointer",
+          fontSize: 18, fontFamily: "'Inter', -apple-system, sans-serif",
         }}>x</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14, marginBottom: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 22 }}>
         <div>
           <label style={labelStyle}>Date</label>
           <input type="date" value={form.date} onChange={e => update("date", e.target.value)} style={inputStyle} />
@@ -90,14 +91,14 @@ function JournalEntryForm({ entry, onSave, onCancel }) {
         </div>
         <div>
           <label style={labelStyle}>Direction</label>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             {["LONG", "SHORT"].map(d => (
               <button key={d} onClick={() => update("direction", d)} style={{
-                flex: 1, padding: "9px 0", borderRadius: 6, fontSize: 12, fontWeight: 600,
-                fontFamily: "var(--mono)", cursor: "pointer", transition: "all 0.15s",
-                border: `1px solid ${form.direction === d ? (d === "LONG" ? C.green : C.red) : C.border}`,
+                flex: 1, padding: "10px 0", borderRadius: 980, fontSize: 13, fontWeight: 500,
+                fontFamily: "'Inter', -apple-system, sans-serif", cursor: "pointer", transition: "all 0.15s",
+                border: `0.5px solid ${form.direction === d ? (d === "LONG" ? C.green : C.red) : C.border}`,
                 background: form.direction === d ? `${d === "LONG" ? C.green : C.red}18` : "transparent",
-                color: form.direction === d ? (d === "LONG" ? C.green : C.red) : C.textDim,
+                color: form.direction === d ? (d === "LONG" ? C.green : C.red) : C.textSecondary,
               }}>{d}</button>
             ))}
           </div>
@@ -108,61 +109,61 @@ function JournalEntryForm({ entry, onSave, onCancel }) {
         </div>
         <div>
           <label style={labelStyle}>Trade Rating (1-5)</label>
-          <div style={{ display: "flex", gap: 4, paddingTop: 4 }}>
+          <div style={{ display: "flex", gap: 6, paddingTop: 4 }}>
             {[1,2,3,4,5].map(n => (
               <button key={n} onClick={() => update("rating", n)} style={{
-                width: 36, height: 36, borderRadius: 6, fontSize: 14, fontWeight: 700,
-                fontFamily: "var(--mono)", cursor: "pointer", transition: "all 0.15s",
-                border: `1px solid ${form.rating === n ? C.accent : C.border}`,
+                width: 38, height: 38, borderRadius: 12, fontSize: 14, fontWeight: 600,
+                fontFamily: "'Inter', -apple-system, sans-serif", cursor: "pointer", transition: "all 0.15s",
+                border: `0.5px solid ${form.rating === n ? C.accent : C.border}`,
                 background: form.rating === n ? `${C.accent}18` : "transparent",
-                color: form.rating === n ? C.accent : C.textDim,
+                color: form.rating === n ? C.accent : C.textSecondary,
               }}>{n}</button>
             ))}
           </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 22 }}>
         <label style={labelStyle}>Emotions</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {EMOTIONS.map(e => (
             <EmotionTag key={e} label={e} selected={form.emotions.includes(e)} onClick={() => toggleEmotion(e)} />
           ))}
         </div>
       </div>
 
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Pre-Trade Plan</label>
         <textarea value={form.preTrade} onChange={e => update("preTrade", e.target.value)}
           placeholder="What's the thesis? Entry criteria, target, stop loss..."
-          rows={3} style={{ ...inputStyle, resize: "vertical", fontFamily: "var(--heading)", fontSize: 13 }} />
+          rows={3} style={{ ...inputStyle, resize: "vertical", fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 14 }} />
       </div>
 
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 16 }}>
         <label style={labelStyle}>Post-Trade Review</label>
         <textarea value={form.postTrade} onChange={e => update("postTrade", e.target.value)}
           placeholder="What happened? Did you follow your plan? What would you do differently?"
-          rows={3} style={{ ...inputStyle, resize: "vertical", fontFamily: "var(--heading)", fontSize: 13 }} />
+          rows={3} style={{ ...inputStyle, resize: "vertical", fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 14 }} />
       </div>
 
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 24 }}>
         <label style={labelStyle}>Lessons Learned</label>
         <textarea value={form.lessons} onChange={e => update("lessons", e.target.value)}
           placeholder="Key takeaways from this trade..."
-          rows={2} style={{ ...inputStyle, resize: "vertical", fontFamily: "var(--heading)", fontSize: 13 }} />
+          rows={2} style={{ ...inputStyle, resize: "vertical", fontFamily: "'Inter', -apple-system, sans-serif", fontSize: 14 }} />
       </div>
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
         <button onClick={onCancel} style={{
-          padding: "10px 20px", borderRadius: 8, border: `1px solid ${C.border}`,
-          background: "transparent", color: C.textDim, fontSize: 13, fontWeight: 600,
-          cursor: "pointer", fontFamily: "var(--heading)",
+          padding: "11px 24px", borderRadius: 980, border: `0.5px solid ${C.border}`,
+          background: "transparent", color: C.textSecondary, fontSize: 14, fontWeight: 500,
+          cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif",
         }}>Cancel</button>
         <button onClick={() => onSave({ ...form, id: form.id || Date.now(), updatedAt: new Date().toISOString() })} style={{
-          padding: "10px 24px", borderRadius: 8, border: "none",
-          background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-          color: C.white, fontSize: 13, fontWeight: 700, cursor: "pointer",
-          fontFamily: "var(--heading)",
+          padding: "11px 28px", borderRadius: 980, border: "none",
+          background: C.accent,
+          color: C.white, fontSize: 14, fontWeight: 500, cursor: "pointer",
+          fontFamily: "'Inter', -apple-system, sans-serif",
         }}>Save Entry</button>
       </div>
     </div>
@@ -172,53 +173,53 @@ function JournalEntryForm({ entry, onSave, onCancel }) {
 function JournalCard({ entry, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const rVal = parseFloat(entry.rMultiple);
-  const rColor = isNaN(rVal) ? C.textDim : rVal >= 0 ? C.green : C.red;
+  const rColor = isNaN(rVal) ? C.textSecondary : rVal >= 0 ? C.green : C.red;
 
   return (
     <div style={{
-      background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`,
-      padding: "18px 20px", transition: "border-color 0.2s",
+      background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}`,
+      padding: "20px 24px", transition: "border-color 0.2s",
     }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderLight}
+    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderHover}
     onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, cursor: "pointer" }} onClick={() => setExpanded(!expanded)}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
-            fontSize: 18, fontWeight: 800, color: C.accent, fontFamily: "var(--mono)",
-            minWidth: 60,
+            fontSize: 18, fontWeight: 700, color: C.accent, fontFamily: "'Inter', -apple-system, sans-serif",
+            minWidth: 60, letterSpacing: "-0.01em",
           }}>{entry.symbol || "---"}</div>
           <div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)" }}>{entry.date}</span>
+              <span style={{ fontSize: 12, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 400 }}>{entry.date}</span>
               {entry.strategy && (
                 <span style={{
-                  fontSize: 9, fontWeight: 600, fontFamily: "var(--mono)",
-                  padding: "2px 8px", borderRadius: 4,
+                  fontSize: 10, fontWeight: 500, fontFamily: "'Inter', -apple-system, sans-serif",
+                  padding: "3px 10px", borderRadius: 980,
                   background: `${C.purple}18`, color: C.purple,
                 }}>{entry.strategy}</span>
               )}
               <span style={{
-                fontSize: 9, fontWeight: 600, fontFamily: "var(--mono)",
-                padding: "2px 8px", borderRadius: 4,
+                fontSize: 10, fontWeight: 500, fontFamily: "'Inter', -apple-system, sans-serif",
+                padding: "3px 10px", borderRadius: 980,
                 background: entry.direction === "LONG" ? `${C.green}18` : `${C.red}18`,
                 color: entry.direction === "LONG" ? C.green : C.red,
               }}>{entry.direction}</span>
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {!isNaN(rVal) && (
-            <span style={{ fontSize: 16, fontWeight: 700, color: rColor, fontFamily: "var(--mono)" }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: rColor, fontFamily: "'Inter', -apple-system, sans-serif" }}>
               {rVal >= 0 ? "+" : ""}{rVal.toFixed(2)}R
             </span>
           )}
           <div style={{ display: "flex", gap: 2 }}>
             {[1,2,3,4,5].map(n => (
-              <span key={n} style={{ fontSize: 10, color: n <= entry.rating ? C.yellow : C.textMuted }}>&#9733;</span>
+              <span key={n} style={{ fontSize: 10, color: n <= entry.rating ? C.yellow : C.textTertiary }}>&#9733;</span>
             ))}
           </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round"
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="2" strokeLinecap="round"
             style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
             <polyline points="6,9 12,15 18,9" />
           </svg>
@@ -226,11 +227,11 @@ function JournalCard({ entry, onEdit, onDelete }) {
       </div>
 
       {entry.emotions.length > 0 && (
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: expanded ? 12 : 0 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: expanded ? 14 : 0 }}>
           {entry.emotions.map(e => (
             <span key={e} style={{
-              fontSize: 9, fontWeight: 600, fontFamily: "var(--mono)",
-              padding: "2px 7px", borderRadius: 10,
+              fontSize: 10, fontWeight: 500, fontFamily: "'Inter', -apple-system, sans-serif",
+              padding: "3px 10px", borderRadius: 980,
               background: `${C.accent}12`, color: C.accent,
             }}>{e}</span>
           ))}
@@ -238,35 +239,35 @@ function JournalCard({ entry, onEdit, onDelete }) {
       )}
 
       {expanded && (
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
           {entry.preTrade && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Pre-Trade Plan</div>
-              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, background: C.bgAlt, borderRadius: 8, padding: "10px 14px" }}>{entry.preTrade}</div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.02em", textTransform: "uppercase", marginBottom: 6 }}>Pre-Trade Plan</div>
+              <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, background: C.surfaceRaised, borderRadius: 12, padding: "12px 16px", fontFamily: "'Inter', -apple-system, sans-serif" }}>{entry.preTrade}</div>
             </div>
           )}
           {entry.postTrade && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Post-Trade Review</div>
-              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, background: C.bgAlt, borderRadius: 8, padding: "10px 14px" }}>{entry.postTrade}</div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.02em", textTransform: "uppercase", marginBottom: 6 }}>Post-Trade Review</div>
+              <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, background: C.surfaceRaised, borderRadius: 12, padding: "12px 16px", fontFamily: "'Inter', -apple-system, sans-serif" }}>{entry.postTrade}</div>
             </div>
           )}
           {entry.lessons && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: C.textDim, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Lessons Learned</div>
-              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, background: C.bgAlt, borderRadius: 8, padding: "10px 14px" }}>{entry.lessons}</div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.02em", textTransform: "uppercase", marginBottom: 6 }}>Lessons Learned</div>
+              <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, background: C.surfaceRaised, borderRadius: 12, padding: "12px 16px", fontFamily: "'Inter', -apple-system, sans-serif" }}>{entry.lessons}</div>
             </div>
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
             <button onClick={(e) => { e.stopPropagation(); onEdit(entry); }} style={{
-              padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`,
-              background: "transparent", color: C.textDim, fontSize: 11,
-              cursor: "pointer", fontFamily: "var(--mono)",
+              padding: "7px 18px", borderRadius: 980, border: `0.5px solid ${C.border}`,
+              background: "transparent", color: C.textSecondary, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif",
             }}>Edit</button>
             <button onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }} style={{
-              padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.red}33`,
-              background: "transparent", color: C.red, fontSize: 11,
-              cursor: "pointer", fontFamily: "var(--mono)",
+              padding: "7px 18px", borderRadius: 980, border: `0.5px solid ${C.red}33`,
+              background: "transparent", color: C.red, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif",
             }}>Delete</button>
           </div>
         </div>
@@ -353,55 +354,57 @@ export default function JournalPage({ userId }) {
   }, [entries]);
 
   const selectStyle = {
-    padding: "7px 10px", background: C.bgAlt, border: `1px solid ${C.border}`,
-    borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "var(--mono)",
-    outline: "none", appearance: "auto",
+    padding: "8px 14px", background: C.surfaceRaised, border: `0.5px solid ${C.border}`,
+    borderRadius: 980, color: C.text, fontSize: 12, fontFamily: "'Inter', -apple-system, sans-serif",
+    outline: "none", appearance: "auto", fontWeight: 400,
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 60px" }}>
-      {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 28px 64px", fontFamily: "'Inter', -apple-system, sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+      {/* -- Header -- */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>Trade Journal</h1>
-          <p style={{ fontSize: 13, color: C.textDim, marginTop: 4 }}>Record your thoughts, emotions, and lessons for every trade</p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, letterSpacing: "-0.04em", fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>Trade Journal</h1>
+          <p style={{ fontSize: 14, color: C.textSecondary, marginTop: 6, fontWeight: 400 }}>Record your thoughts, emotions, and lessons for every trade</p>
         </div>
         <button onClick={() => { setEditEntry(null); setShowForm(true); }} style={{
-          padding: "10px 20px", border: "none", borderRadius: 8,
-          background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
-          color: C.white, fontSize: 13, fontWeight: 700, cursor: "pointer",
-          fontFamily: "var(--heading)",
+          padding: "11px 24px", border: "none", borderRadius: 980,
+          background: C.accent,
+          color: C.white, fontSize: 14, fontWeight: 500, cursor: "pointer",
+          fontFamily: "'Inter', -apple-system, sans-serif",
         }}>+ New Entry</button>
       </div>
 
-      {/* ── Stats Bar ── */}
+      {/* -- Stats Bar -- */}
       {stats && (
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-          gap: 10, marginBottom: 20,
+          gap: 12, marginBottom: 24,
         }}>
           {[
             { l: "Entries", v: stats.total, c: C.accent },
             { l: "With Notes", v: stats.withNotes, c: C.cyan },
-            { l: "Avg R", v: stats.avgR === "N/A" ? "N/A" : `${parseFloat(stats.avgR) >= 0 ? "+" : ""}${stats.avgR}R`, c: stats.avgR === "N/A" ? C.textDim : parseFloat(stats.avgR) >= 0 ? C.green : C.red },
+            { l: "Avg R", v: stats.avgR === "N/A" ? "N/A" : `${parseFloat(stats.avgR) >= 0 ? "+" : ""}${stats.avgR}R`, c: stats.avgR === "N/A" ? C.textSecondary : parseFloat(stats.avgR) >= 0 ? C.green : C.red },
             { l: "Avg Rating", v: `${stats.avgRating}/5`, c: C.yellow },
             { l: "Top Emotion", v: stats.topEmotion, c: C.purple },
             { l: "Top Strategy", v: stats.topStrategy, c: C.accent },
           ].map(m => (
             <div key={m.l} style={{
-              background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`,
-              padding: "10px 14px",
+              background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}`,
+              padding: "14px 18px",
             }}>
-              <div style={{ fontSize: 9, color: C.textMuted, fontFamily: "var(--mono)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{m.l}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: m.c, fontFamily: "var(--mono)", marginTop: 2 }}>{m.v}</div>
+              <div style={{ fontSize: 10, color: C.textTertiary, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "0.02em", textTransform: "uppercase", fontWeight: 500 }}>{m.l}</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: m.c, fontFamily: "'Inter', -apple-system, sans-serif", marginTop: 4, letterSpacing: "-0.01em" }}>{m.v}</div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── Form ── */}
+      {/* -- Form -- */}
       {showForm && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 24 }}>
           <JournalEntryForm
             entry={editEntry}
             onSave={handleSave}
@@ -410,17 +413,17 @@ export default function JournalPage({ userId }) {
         </div>
       )}
 
-      {/* ── Filters ── */}
+      {/* -- Filters -- */}
       <div style={{
-        display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center",
+        display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center",
       }}>
         <input
           type="text" placeholder="Search entries..." value={searchText}
           onChange={e => setSearchText(e.target.value)}
           style={{
-            padding: "7px 12px", background: C.bgAlt, border: `1px solid ${C.border}`,
-            borderRadius: 6, color: C.text, fontSize: 12, fontFamily: "var(--mono)",
-            outline: "none", width: 200,
+            padding: "8px 16px", background: C.surfaceRaised, border: `0.5px solid ${C.border}`,
+            borderRadius: 980, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif",
+            outline: "none", width: 220, fontWeight: 400,
           }}
         />
         <select value={filterStrategy} onChange={e => setFilterStrategy(e.target.value)} style={selectStyle}>
@@ -431,29 +434,29 @@ export default function JournalPage({ userId }) {
           <option value="">All Emotions</option>
           {EMOTIONS.map(e => <option key={e} value={e}>{e}</option>)}
         </select>
-        <span style={{ fontSize: 11, color: C.textDim, fontFamily: "var(--mono)", marginLeft: "auto" }}>
+        <span style={{ fontSize: 12, color: C.textSecondary, fontFamily: "'Inter', -apple-system, sans-serif", marginLeft: "auto", fontWeight: 400 }}>
           {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
         </span>
       </div>
 
-      {/* ── Entries ── */}
+      {/* -- Entries -- */}
       {filtered.length === 0 ? (
         <div style={{
-          textAlign: "center", padding: "60px 24px", color: C.textMuted,
-          background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`,
+          textAlign: "center", padding: "64px 28px", color: C.textTertiary,
+          background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`,
         }}>
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 14 }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 16 }}>
             <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.textDim }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: C.textSecondary }}>
             {entries.length === 0 ? "No journal entries yet" : "No entries match your filters"}
           </div>
-          <div style={{ fontSize: 12, marginTop: 6 }}>
+          <div style={{ fontSize: 13, marginTop: 8, fontWeight: 400 }}>
             {entries.length === 0 ? "Click \"+ New Entry\" to record your first trade journal entry." : "Try adjusting your search or filter criteria."}
           </div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map(entry => (
             <JournalCard key={entry.id} entry={entry} onEdit={handleEdit} onDelete={handleDelete} />
           ))}
