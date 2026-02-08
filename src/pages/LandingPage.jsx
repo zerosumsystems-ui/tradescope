@@ -94,7 +94,12 @@ export default function LandingPage() {
           <Logo size={34} />
           <span style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em" }}>TradeScope</span>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button onClick={() => navigate("/pricing")} style={{
+            padding: "9px 16px", border: "none", borderRadius: 8,
+            background: "transparent", color: C.textDim, fontSize: 13, fontWeight: 600,
+            cursor: "pointer", fontFamily: "var(--heading)",
+          }}>Pricing</button>
           <button onClick={() => navigate("/login")} style={{
             padding: "9px 20px", border: `1px solid ${C.border}`, borderRadius: 8,
             background: "transparent", color: C.text, fontSize: 13, fontWeight: 600,

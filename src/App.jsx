@@ -6,6 +6,8 @@ import TradeDashboard from './Dashboard'
 import LandingPage from './pages/LandingPage'
 import JournalPage from './pages/JournalPage'
 import CalculatorPage from './pages/CalculatorPage'
+import InsightsPage from './pages/InsightsPage'
+import PricingPage from './pages/PricingPage'
 import Layout from './components/Layout'
 
 const C = {
@@ -123,6 +125,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [savedTrades, setSavedTrades] = useState([])
   const [settings, setSettings] = useState({ account_size: 100000, risk_percent: 1 })
+  const [dashboardStats, setDashboardStats] = useState(null)
 
   // Check existing session on mount
   useEffect(() => {
@@ -222,6 +225,9 @@ export default function App() {
       <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <AuthScreen onAuth={setSession} />} />
 
+      {/* Public routes */}
+      <Route path="/pricing" element={<PricingPage />} />
+
       {/* Authenticated routes */}
       <Route element={session ? <Layout user={session.user} onSignOut={handleSignOut} /> : <Navigate to="/login" replace />}>
         <Route path="/dashboard" element={
@@ -233,10 +239,12 @@ export default function App() {
             initialSettings={settings}
             user={session?.user}
             onSignOut={handleSignOut}
+            onStatsChange={setDashboardStats}
           />
         } />
         <Route path="/journal" element={<JournalPage userId={session?.user?.id} />} />
         <Route path="/calculator" element={<CalculatorPage />} />
+        <Route path="/insights" element={<InsightsPage stats={dashboardStats} />} />
       </Route>
 
       {/* Catch-all */}
