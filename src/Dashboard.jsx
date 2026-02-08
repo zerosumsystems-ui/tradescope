@@ -772,70 +772,162 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
   if (!loaded) {
     return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', -apple-system, sans-serif", color: C.text, position: "relative", overflow: "hidden" }}>
+      <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: C.text, overflow: "hidden" }}>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-        {/* Ambient glow */}
-        <div style={{ position: "absolute", top: "20%", left: "50%", transform: "translateX(-50%)", width: "50vw", maxWidth: 500, height: 400, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(41,151,255,0.04) 0%, transparent 70%)", pointerEvents: "none", filter: "blur(60px)" }} />
-        <div style={{ width: "100%", maxWidth: 480, padding: 28, position: "relative" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.04em", marginBottom: 12 }}>
+
+        {/* ── Hero + Upload ── */}
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "clamp(32px, 6vh, 72px) 20px 0" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <h1 style={{ fontSize: "clamp(32px, 6vw, 48px)", fontWeight: 700, letterSpacing: "-0.045em", marginBottom: 12, lineHeight: 1.05 }}>
               Import your trades.
             </h1>
-            <p style={{ color: C.textDim, fontSize: 17, maxWidth: 340, margin: "0 auto", lineHeight: 1.5, fontWeight: 400 }}>
+            <p style={{ color: C.textDim, fontSize: "clamp(15px, 2vw, 17px)", maxWidth: 400, margin: "0 auto", lineHeight: 1.5, fontWeight: 400 }}>
               Drop a CSV and see your Van Tharp analytics in seconds.
             </p>
           </div>
 
-          <div style={{
-            border: `1px solid ${dragOver ? "rgba(41,151,255,0.4)" : C.border}`, borderRadius: 24,
-            padding: "56px 36px", textAlign: "center", cursor: "pointer",
-            background: dragOver ? "rgba(41,151,255,0.03)" : C.surface,
-            transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
-            boxShadow: dragOver ? "0 0 0 4px rgba(41,151,255,0.08)" : "none",
-          }}
-            onClick={() => fileRef.current?.click()}
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-          >
-            <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(41,151,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+          {/* Upload + Sample side by side on desktop */}
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+            {/* Drop zone */}
+            <div style={{
+              flex: "1 1 320px", maxWidth: 420,
+              border: `1px solid ${dragOver ? "rgba(41,151,255,0.4)" : C.border}`, borderRadius: 24,
+              padding: "clamp(32px, 5vw, 48px) clamp(20px, 4vw, 32px)", textAlign: "center", cursor: "pointer",
+              background: dragOver ? "rgba(41,151,255,0.03)" : C.surface,
+              transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
+              boxShadow: dragOver ? "0 0 0 4px rgba(41,151,255,0.08)" : "none",
+            }}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+            >
+              <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(41,151,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>Drop your CSV here</div>
+              <div style={{ fontSize: 13, color: C.textDim, marginTop: 6, fontWeight: 400 }}>or click to browse</div>
+              <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
+                {["Fidelity", "Schwab", "IBKR", "Webull", "Tradovate", "AMP", "TradeLocker"].map(b => (
+                  <span key={b} style={{ padding: "3px 9px", borderRadius: 980, fontSize: 9, fontWeight: 500, background: "rgba(255,255,255,0.04)", color: C.textMuted, border: `0.5px solid ${C.border}` }}>{b}</span>
+                ))}
+              </div>
             </div>
-            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em" }}>Drop your CSV here</div>
-            <div style={{ fontSize: 13, color: C.textDim, marginTop: 8, fontWeight: 400 }}>or click to browse</div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
-              {["Fidelity", "Schwab", "IBKR", "Webull", "Tradovate", "AMP", "TradeLocker"].map(b => (
-                <span key={b} style={{ padding: "4px 10px", borderRadius: 980, fontSize: 10, fontWeight: 500, background: "rgba(255,255,255,0.04)", color: C.textMuted, border: `0.5px solid ${C.border}` }}>{b}</span>
+
+            {/* Sample + Config */}
+            <div style={{ flex: "1 1 280px", maxWidth: 360, display: "flex", flexDirection: "column", gap: 12 }}>
+              <button onClick={() => processCSV(SAMPLE_CSV)} style={{
+                width: "100%", padding: "18px 24px", border: `0.5px solid rgba(255,255,255,0.12)`, borderRadius: 16,
+                background: C.surface, color: C.text, fontSize: 15, fontWeight: 600, cursor: "pointer",
+                fontFamily: "'Inter', -apple-system, sans-serif", transition: "all 0.3s cubic-bezier(0.25, 1, 0.5, 1)",
+                letterSpacing: "-0.01em", textAlign: "left",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(52,199,89,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" /></svg>
+                  </div>
+                  <div>
+                    <div>Try with sample data</div>
+                    <div style={{ fontSize: 11, color: C.textDim, fontWeight: 400, marginTop: 2 }}>20 trades · Fidelity format</div>
+                  </div>
+                </div>
+              </button>
+
+              <div style={{ padding: "16px 18px", background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}` }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>R-value configuration</div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Account Size ($)</label>
+                    <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Risk per Trade (%)</label>
+                    <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} per trade</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── What you'll see ── */}
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
+              What you'll see
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 10 }}>
+              {[
+                { label: "SQN", value: "3.42", badge: "Excellent", c: C.green },
+                { label: "Expectancy", value: "+0.38R", c: C.green },
+                { label: "Win Rate", value: "65.0%", c: C.text },
+                { label: "Profit Factor", value: "2.14", c: C.green },
+                { label: "Payoff Ratio", value: "1.72", c: C.green },
+                { label: "Max Drawdown", value: "2.1R", c: C.yellow },
+                { label: "Expectunity", value: "+2.1R/mo", c: C.accent },
+                { label: "R Skewness", value: "+0.46", c: C.green },
+              ].map(m => (
+                <div key={m.label} style={{
+                  background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 16,
+                  padding: "16px 18px", opacity: 0.5,
+                }}>
+                  <div style={{ fontSize: 9, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>{m.label}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ fontSize: 22, fontWeight: 700, color: m.c, letterSpacing: "-0.03em" }}>{m.value}</span>
+                    {m.badge && <span style={{ fontSize: 9, fontWeight: 600, color: m.c, padding: "2px 8px", borderRadius: 980, background: `${m.c}12` }}>{m.badge}</span>}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
 
-          <div style={{ textAlign: "center", margin: "20px 0", color: C.textMuted, fontSize: 12 }}>or</div>
-
-          <button onClick={() => processCSV(SAMPLE_CSV)} style={{
-            width: "100%", padding: "16px 24px", border: `0.5px solid rgba(255,255,255,0.12)`, borderRadius: 14,
-            background: "transparent", color: C.text, fontSize: 15, fontWeight: 600, cursor: "pointer",
-            fontFamily: "'Inter', -apple-system, sans-serif", transition: "all 0.3s cubic-bezier(0.25, 1, 0.5, 1)",
-            letterSpacing: "-0.01em",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
-          >Try with sample data</button>
-
-          <div style={{ marginTop: 28, padding: "20px 22px", background: C.surface, borderRadius: 16, border: `0.5px solid ${C.border}` }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif", marginBottom: 10 }}>R-value configuration</div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", display: "block", marginBottom: 4 }}>Account Size ($)</label>
-                <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 10, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", display: "block", marginBottom: 4 }}>Risk per Trade (%)</label>
-                <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
-              </div>
+          {/* ── How it works ── */}
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20, textAlign: "center" }}>
+              How it works
             </div>
-            <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} (initial risk per trade)</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16 }}>
+              {[
+                { step: "1", title: "Export your trades", desc: "Download a CSV from your broker's trade history or account activity page.", icon: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" },
+                { step: "2", title: "Drop it here", desc: "We auto-detect your broker format. No column mapping or configuration needed.", icon: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" },
+                { step: "3", title: "See your edge", desc: "SQN, R-multiples, expectancy, equity curves, and 20+ Van Tharp metrics instantly.", icon: "M22 12h-4l-3 9L9 3l-3 9H2" },
+              ].map(s => (
+                <div key={s.step} style={{
+                  background: C.surface, borderRadius: 20, border: `0.5px solid ${C.border}`,
+                  padding: "24px 22px", textAlign: "center",
+                }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 12, margin: "0 auto 14px",
+                    background: "rgba(41,151,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={s.icon} />
+                    </svg>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.5, fontWeight: 400 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Metrics list ── */}
+          <div style={{ textAlign: "center", paddingBottom: 60 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+              20+ Van Tharp metrics
+            </div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", maxWidth: 640, margin: "0 auto" }}>
+              {["SQN", "Expectancy", "Expectunity", "R-Multiples", "Win Rate", "Profit Factor", "Payoff Ratio", "Max Drawdown", "Equity Curve", "R-Distribution", "Skewness", "Kurtosis", "By Symbol", "By Day of Week", "Holding Period", "Monthly R", "Win/Loss Streaks", "Strategy Tags"].map(m => (
+                <span key={m} style={{
+                  padding: "6px 14px", borderRadius: 980, fontSize: 12, fontWeight: 500,
+                  background: "rgba(255,255,255,0.03)", color: C.textDim,
+                  border: `0.5px solid ${C.border}`,
+                }}>{m}</span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
