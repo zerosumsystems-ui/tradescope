@@ -8,6 +8,9 @@ import JournalPage from './pages/JournalPage'
 import CalculatorPage from './pages/CalculatorPage'
 import InsightsPage from './pages/InsightsPage'
 import PricingPage from './pages/PricingPage'
+import HeatmapPage from './pages/HeatmapPage'
+import RiskOfRuinPage from './pages/RiskOfRuinPage'
+import ReplayPage from './pages/ReplayPage'
 import Layout from './components/Layout'
 
 const C = {
@@ -252,6 +255,9 @@ export default function App() {
         <Route path="/journal" element={<JournalPage userId={session?.user?.id} />} />
         <Route path="/calculator" element={<CalculatorPage />} />
         <Route path="/insights" element={<InsightsPage stats={dashboardStats} />} />
+        <Route path="/heatmap" element={<HeatmapPage stats={dashboardStats} />} />
+        <Route path="/risk-of-ruin" element={<RiskOfRuinPage />} />
+        <Route path="/replay" element={<ReplayPage stats={dashboardStats} />} />
       </Route>
 
       {/* Catch-all */}
