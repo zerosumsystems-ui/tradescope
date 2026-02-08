@@ -163,18 +163,204 @@ function parseWebullCSV(csvText) {
   return trades;
 }
 
+function parseTradovateCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("b/s") && (l.includes("contract") || l.includes("product")) && (l.includes("qty") || l.includes("filled qty") || l.includes("filledqty"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const bs = (row["b/s"] || "").toUpperCase();
+    if (!bs.includes("BUY") && !bs.includes("SELL") && bs !== "B" && bs !== "S") continue;
+    const contract = row["contract"] || row["symbol"] || "";
+    const product = row["product"] || "";
+    // Extract base symbol from futures contract (e.g., ESZ4 -> ES, MESZ4 -> MES)
+    const symbol = product || contract.replace(/[FGHJKMNQUVXZ]\d{1,2}$/i, "") || contract;
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat(row["filledqty"] || row["filled qty"] || row["qty"] || row["quantity"] || "0")) || 0;
+    if (qty === 0) continue;
+    const price = parseFloat(row["avgprice"] || row["avg fill price"] || row["avgfillprice"] || row["price"] || "0") || 0;
+    const dateStr = row["fill time"] || row["filltime"] || row["timestamp"] || row["date"] || "";
+    // Handle ISO dates, strip time portion for date
+    const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+    trades.push({
+      date: datePart, symbol: symbol.toUpperCase(), description: row["product description"] || contract,
+      action: (bs.includes("BUY") || bs === "B") ? "BUY" : "SELL",
+      quantity: qty, price, commission: 0, fees: 0, amount: qty * price,
+    });
+  }
+  return trades;
+}
+
+function parseAMPFuturesCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    // CQG Desktop format: Account, Status, B/S, Qty, ..., Symbol, Avg Fill P, ...
+    if ((l.includes("b/s") || l.includes("buy/sell")) && (l.includes("avg fill") || l.includes("avgfillprice") || l.includes("fill p")) && (l.includes("symbol") || l.includes("contract"))) { headerIdx = i; break; }
+    // Rithmic format: Account, Status, Buy/Sell, Qty To Fill, Symbol, Qty Filled, Avg Fill Price, ...
+    if (l.includes("buy/sell") && l.includes("qty filled") && l.includes("avg fill price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    // Skip non-filled orders
+    const status = (row["status"] || "").toLowerCase();
+    if (status && !status.includes("fill") && !status.includes("complete")) continue;
+    const bs = (row["b/s"] || row["buy/sell"] || "").toUpperCase();
+    if (!bs.includes("BUY") && !bs.includes("SELL") && bs !== "B" && bs !== "S") continue;
+    const rawSymbol = row["symbol"] || row["contract"] || "";
+    if (!rawSymbol) continue;
+    // CQG symbols like F.US.EPH25 or EPH25 -> strip prefix and contract month
+    let symbol = rawSymbol;
+    if (symbol.includes(".")) symbol = symbol.split(".").pop(); // F.US.EPH25 -> EPH25
+    // Strip contract month/year suffix for grouping (e.g., EPH25 -> EP, ENQZ4 -> ENQ)
+    const baseSymbol = symbol.replace(/[FGHJKMNQUVXZ]\d{1,2}$/i, "") || symbol;
+    const qty = Math.abs(parseFloat(row["fld"] || row["qty filled"] || row["filledqty"] || row["qty"] || row["quantity"] || "0")) || 0;
+    if (qty === 0) continue;
+    const price = parseFloat(row["avg fill p"] || row["avg fill price"] || row["avgfillprice"] || row["price"] || "0") || 0;
+    const fee = Math.abs(parseFloat(row["fee"] || row["commission"] || "0")) || 0;
+    const dateStr = row["fill t"] || row["update time"] || row["create time"] || row["place t"] || row["date"] || "";
+    const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+    trades.push({
+      date: datePart, symbol: baseSymbol.toUpperCase(), description: rawSymbol,
+      action: (bs.includes("BUY") || bs === "B") ? "BUY" : "SELL",
+      quantity: qty, price, commission: fee, fees: 0, amount: qty * price,
+    });
+  }
+  return trades;
+}
+
+function parseTradeLockerCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    // Closed positions format: side/type + open price + close price + profit
+    if (l.includes("side") && l.includes("open price") && l.includes("close price") && (l.includes("profit") || l.includes("pl") || l.includes("p&l"))) { headerIdx = i; break; }
+    if (l.includes("type") && l.includes("open price") && l.includes("close price") && (l.includes("profit") || l.includes("pl"))) { headerIdx = i; break; }
+    // Order history format: side + qty + avgprice / avg price
+    if (l.includes("side") && (l.includes("qty") || l.includes("volume") || l.includes("lots")) && l.includes("symbol") && (l.includes("avgprice") || l.includes("avg price") || l.includes("price"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const hasClosePrice = headers.some(h => h.includes("close price") || h === "closeprice");
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const side = (row["side"] || row["type"] || row["direction"] || "").toUpperCase();
+    if (!side.includes("BUY") && !side.includes("SELL") && !side.includes("LONG") && !side.includes("SHORT")) continue;
+    const symbol = (row["symbol"] || row["instrument"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const isBuy = side.includes("BUY") || side.includes("LONG");
+    const qty = Math.abs(parseFloat(row["volume"] || row["lots"] || row["qty"] || row["quantity"] || "0")) || 0;
+    if (qty === 0) continue;
+    const commission = Math.abs(parseFloat(row["commission"] || "0")) || 0;
+    const swap = Math.abs(parseFloat(row["swap"] || "0")) || 0;
+    if (hasClosePrice) {
+      // Completed position: split into a buy + sell pair for matchTrades
+      const openPrice = parseFloat(row["open price"] || row["openprice"] || "0") || 0;
+      const closePrice = parseFloat(row["close price"] || row["closeprice"] || "0") || 0;
+      let openDate = row["open time"] || row["opentime"] || row["open date"] || row["opendate"] || "";
+      let closeDate = row["close time"] || row["closetime"] || row["close date"] || row["closedate"] || "";
+      // Handle epoch ms timestamps
+      if (/^\d{10,13}$/.test(openDate)) openDate = new Date(Number(openDate.length > 10 ? openDate : openDate + "000")).toISOString().split("T")[0];
+      else openDate = openDate.includes("T") ? openDate.split("T")[0] : openDate.split(" ")[0] || openDate;
+      if (/^\d{10,13}$/.test(closeDate)) closeDate = new Date(Number(closeDate.length > 10 ? closeDate : closeDate + "000")).toISOString().split("T")[0];
+      else closeDate = closeDate.includes("T") ? closeDate.split("T")[0] : closeDate.split(" ")[0] || closeDate;
+      // For a long position: buy at open, sell at close
+      // For a short position: sell at open, buy at close
+      trades.push({
+        date: openDate, symbol, description: "",
+        action: isBuy ? "BUY" : "SELL",
+        quantity: qty, price: openPrice, commission: commission / 2, fees: swap / 2, amount: qty * openPrice,
+      });
+      trades.push({
+        date: closeDate, symbol, description: "",
+        action: isBuy ? "SELL" : "BUY",
+        quantity: qty, price: closePrice, commission: commission / 2, fees: swap / 2, amount: qty * closePrice,
+      });
+    } else {
+      // Individual fills format
+      const price = parseFloat(row["avgprice"] || row["avg price"] || row["price"] || "0") || 0;
+      let dateStr = row["createddate"] || row["created date"] || row["date"] || row["time"] || "";
+      if (/^\d{10,13}$/.test(dateStr)) dateStr = new Date(Number(dateStr.length > 10 ? dateStr : dateStr + "000")).toISOString().split("T")[0];
+      else dateStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+      trades.push({
+        date: dateStr, symbol, description: "",
+        action: isBuy ? "BUY" : "SELL",
+        quantity: qty, price, commission, fees: swap, amount: qty * price,
+      });
+    }
+  }
+  return trades;
+}
+
 function parseCSVAuto(csvText) {
   const lower = csvText.toLowerCase();
+  // Fidelity: "Run Date" + "YOU BOUGHT"
   if (lower.includes("run date") && lower.includes("you bought")) return { trades: parseFidelityCSV(csvText), broker: "Fidelity" };
+  // IBKR: "Trades" + "Header" or "Date/Time" + "T. Price"
   if ((lower.includes("trades") && lower.includes("header")) || (lower.includes("date/time") && lower.includes("t. price"))) return { trades: parseIBKRCSV(csvText), broker: "Interactive Brokers" };
+  // Tradovate: "B/S" + "Contract" + "Product" (futures-specific columns)
+  if (lower.includes("b/s") && lower.includes("contract") && lower.includes("product")) {
+    const tv = parseTradovateCSV(csvText);
+    if (tv.length) return { trades: tv, broker: "Tradovate" };
+  }
+  // AMP/CQG: "B/S" + "Avg Fill P" (CQG Desktop format)
+  if (lower.includes("b/s") && lower.includes("avg fill p")) {
+    const amp = parseAMPFuturesCSV(csvText);
+    if (amp.length) return { trades: amp, broker: "AMP Futures" };
+  }
+  // AMP/Rithmic: "Buy/Sell" + "Qty Filled" + "Avg Fill Price"
+  if (lower.includes("buy/sell") && lower.includes("qty filled") && lower.includes("avg fill price")) {
+    const amp = parseAMPFuturesCSV(csvText);
+    if (amp.length) return { trades: amp, broker: "AMP Futures" };
+  }
+  // TradeLocker: "side" + "open price" + "close price" (closed positions)
+  if (lower.includes("side") && lower.includes("open price") && lower.includes("close price")) {
+    const tl = parseTradeLockerCSV(csvText);
+    if (tl.length) return { trades: tl, broker: "TradeLocker" };
+  }
+  // TradeLocker: individual fills with "side" + "symbol" + ("volume" or "lots")
+  if (lower.includes("side") && lower.includes("symbol") && (lower.includes("volume") || lower.includes("lots")) && !lower.includes("filled qty")) {
+    const tl = parseTradeLockerCSV(csvText);
+    if (tl.length) return { trades: tl, broker: "TradeLocker" };
+  }
+  // Webull: "side" + "avg price" or "filled qty"
   if ((lower.includes("side") && lower.includes("avg price")) || (lower.includes("filled qty"))) return { trades: parseWebullCSV(csvText), broker: "Webull" };
+  // Schwab: "action" + "symbol" + "quantity" (no "Run Date")
   if (lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date")) {
     const schwab = parseSchwabCSV(csvText);
     if (schwab.length) return { trades: schwab, broker: "Schwab" };
   }
+  // Fallback: try all parsers
   const fidelity = parseFidelityCSV(csvText);
   if (fidelity.length) return { trades: fidelity, broker: "Fidelity" };
-  for (const [fn, name] of [[parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"]]) {
+  for (const [fn, name] of [[parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"], [parseTradovateCSV, "Tradovate"], [parseAMPFuturesCSV, "AMP Futures"], [parseTradeLockerCSV, "TradeLocker"]]) {
     const result = fn(csvText);
     if (result.length) return { trades: result, broker: name };
   }
@@ -463,7 +649,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (!processCSV(e.target.result)) alert("Could not parse trades. Supported brokers: Fidelity, Schwab, Interactive Brokers, Webull.");
+      if (!processCSV(e.target.result)) alert("Could not parse trades. Supported brokers: Fidelity, Schwab, Interactive Brokers, Webull, Tradovate, AMP Futures, TradeLocker.");
     };
     reader.readAsText(file);
   }, [processCSV]);
@@ -605,7 +791,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5" strokeLinecap="round" style={{ marginBottom: 14 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Drop your broker CSV or click to browse</div>
-            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "var(--mono)" }}>Supports Fidelity, Schwab, Interactive Brokers, Webull</div>
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, fontFamily: "var(--mono)" }}>Supports Fidelity, Schwab, IBKR, Webull, Tradovate, AMP, TradeLocker</div>
           </div>
           <div style={{ textAlign: "center", margin: "20px 0", color: C.textMuted, fontSize: 12 }}>or</div>
           <button onClick={() => processCSV(SAMPLE_CSV)} style={{ width: "100%", padding: "13px 24px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.surface, color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--heading)", transition: "all 0.2s" }}
