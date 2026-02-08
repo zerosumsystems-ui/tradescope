@@ -481,20 +481,17 @@ const TT = ({ active, payload, label, formatter }) => {
 
 function MetricCard({ label, value, sub, color, rating, ratingColor, small }) {
   return (
-    <div style={{
+    <div className="card-hover" style={{
       background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 16,
       padding: small ? "16px 18px" : "20px 22px", display: "flex", flexDirection: "column", gap: 6,
-      transition: "border-color 0.2s", minWidth: 0,
-    }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderLight}
-    onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
-    >
-      <div style={{ fontSize: 10, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', -apple-system, sans-serif" }}>{label}</div>
+      minWidth: 0, animation: "slideUp 0.5s ease both",
+    }}>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 500 }}>{label}</div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: small ? 20 : 26, fontWeight: 700, color: color || C.text, fontFamily: "'Inter', -apple-system, sans-serif", letterSpacing: "-0.03em" }}>{value}</span>
-        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, fontFamily: "'Inter', -apple-system, sans-serif", padding: "2px 8px", borderRadius: 4, background: `${ratingColor || C.accent}18`, letterSpacing: "0.04em" }}>{rating}</span>}
+        <span className="tabular-nums" style={{ fontSize: small ? 22 : 28, fontWeight: 700, color: color || C.text, letterSpacing: "-0.03em", animation: "countUp 0.4s ease both" }}>{value}</span>
+        {rating && <span style={{ fontSize: 10, fontWeight: 600, color: ratingColor || C.accent, padding: "3px 10px", borderRadius: 980, background: `${ratingColor || C.accent}15`, letterSpacing: "0.02em" }}>{rating}</span>}
       </div>
-      {sub && <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif", lineHeight: 1.4 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.4 }}>{sub}</div>}
     </div>
   );
 }
@@ -854,7 +851,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
         {activeTab === "tharp" && stats && (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
+            <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 12 }}>
               <MetricCard label="System Quality Number (SQN®)" value={stats.sqn.toFixed(2)} color={stats.sqnRating.color} rating={stats.sqnRating.label} ratingColor={stats.sqnRating.color} sub="√min(n,100) × (Mean R / Std R)" />
               <MetricCard label="Expectancy (Mean R)" value={`${stats.meanR >= 0 ? "+" : ""}${stats.meanR.toFixed(3)}R`} color={stats.meanR >= 0 ? C.green : C.red} sub="Avg profit per trade in risk units" />
               <MetricCard label="Expectancy Ratio" value={stats.expectancyRatio.toFixed(3)} color={stats.expRating.color} rating={stats.expRating.label} ratingColor={stats.expRating.color} sub="Mean R / Std Dev R (quality w/o n)" />
@@ -862,7 +859,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               <MetricCard label="Payoff Ratio" value={stats.payoffRatio} color={parseFloat(stats.payoffRatio) >= 1.5 ? C.green : C.yellow} sub={`Avg Win ${stats.avgWinR}R / Avg Loss ${stats.avgLossR}R`} />
               <MetricCard label="Profit Factor (R)" value={stats.profitFactorR} color={parseFloat(stats.profitFactorR) >= 1.5 ? C.green : C.yellow} sub="Σ Winning R / |Σ Losing R|" />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
+            <div className="stagger" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
               <MetricCard small label="Win Rate" value={`${stats.winRate}%`} color={stats.winRate >= 50 ? C.green : C.red} sub={`${stats.wins}W / ${stats.losses}L`} />
               <MetricCard small label="Total R Earned" value={`${stats.totalR >= 0 ? "+" : ""}${stats.totalR}R`} color={stats.totalR >= 0 ? C.green : C.red} sub={`$${stats.totalPnL.toLocaleString()}`} />
               <MetricCard small label="Max Drawdown (R)" value={`${stats.maxDDR}R`} color={stats.maxDDR > 5 ? C.red : C.yellow} sub={`$${Math.round(stats.maxDDR * riskPerTrade).toLocaleString()}`} />
