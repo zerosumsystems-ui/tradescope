@@ -109,7 +109,7 @@ export default function LandingPage() {
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         backdropFilter: "saturate(180%) blur(20px)",
         WebkitBackdropFilter: "saturate(180%) blur(20px)",
-        background: navSolid ? "rgba(0,0,0,0.82)" : "transparent",
+        background: navSolid ? "rgba(0,0,0,0.94)" : "transparent",
         borderBottom: navSolid ? "0.5px solid rgba(255,255,255,0.06)" : "0.5px solid transparent",
         transition: "background 0.5s ease, border-color 0.5s ease",
       }}>

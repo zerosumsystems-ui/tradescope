@@ -25,7 +25,7 @@ export default function Layout({ user, onSignOut }) {
         position: "sticky", top: 0, zIndex: 50,
         backdropFilter: "saturate(180%) blur(20px)",
         WebkitBackdropFilter: "saturate(180%) blur(20px)",
-        background: "rgba(0,0,0,0.72)",
+        background: "rgba(0,0,0,0.92)",
         borderBottom: "0.5px solid rgba(255,255,255,0.08)",
       }}>
         <div style={{
