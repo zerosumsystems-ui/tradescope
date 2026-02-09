@@ -277,7 +277,7 @@ function JournalCard({ entry, onEdit, onDelete }) {
 }
 
 export default function JournalPage({ userId }) {
-  const storageKey = `tradescope_journal_${userId || "local"}`;
+  const storageKey = `aiedge_journal_${userId || "local"}`;
   const [entries, setEntries] = useState(() => {
     try { return JSON.parse(localStorage.getItem(storageKey) || "[]"); } catch { return []; }
   });

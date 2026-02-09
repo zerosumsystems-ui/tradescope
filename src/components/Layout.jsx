@@ -40,7 +40,7 @@ export default function Layout({ user, plan, onSignOut }) {
               <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" />
               <polyline points="16,7 22,7 22,13" />
             </svg>
-            <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.02em" }}>TradeScope</span>
+            <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.02em" }}>AI Edge</span>
           </div>
 
           {/* User */}

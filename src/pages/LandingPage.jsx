@@ -111,7 +111,7 @@ export default function LandingPage() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" strokeWidth="2.5" strokeLinecap="round">
               <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
             </svg>
-            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em" }}>TradeScope</span>
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em" }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
             <button onClick={() => navigate("/pricing")} style={{
@@ -152,7 +152,7 @@ export default function LandingPage() {
           <h1 style={{
             fontSize: "clamp(64px, 12vw, 120px)", fontWeight: 700, lineHeight: 1.0,
             letterSpacing: "-0.055em", margin: "0 0 16px",
-          }}>TradeScope</h1>
+          }}>AI Edge</h1>
         </Reveal>
         <Reveal delay={0.06}>
           <p style={{
@@ -431,7 +431,7 @@ export default function LandingPage() {
 
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-         WHY TRADESCOPE
+         WHY AI EDGE
          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ padding: "100px 24px", maxWidth: 860, margin: "0 auto" }}>
         <Reveal>
@@ -440,7 +440,7 @@ export default function LandingPage() {
             letterSpacing: "-0.04em", lineHeight: 1.07, textAlign: "center",
             marginBottom: 56,
           }}>
-            Why TradeScope.
+            Why AI Edge.
           </h2>
         </Reveal>
 
@@ -534,7 +534,7 @@ export default function LandingPage() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#48484a" strokeWidth="2" strokeLinecap="round">
               <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
             </svg>
-            <span style={{ fontSize: 12, color: "#48484a", fontWeight: 400 }}>TradeScope</span>
+            <span style={{ fontSize: 12, color: "#48484a", fontWeight: 400 }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>
             <button onClick={() => navigate("/pricing")} style={{
