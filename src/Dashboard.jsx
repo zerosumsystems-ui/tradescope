@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, Legend, ReferenceLine, ComposedChart, Scatter } from "recharts";
+import * as db from "./db";
 
 const C = {
   bg: "#000000",
@@ -613,6 +614,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [detectedBroker, setDetectedBroker] = useState("");
   const fileRef = useRef(null);
 
+  // Broker connection state
+  const [brokerStatus, setBrokerStatus] = useState(null); // { connected, accounts, lastSync }
+  const [brokerLoading, setBrokerLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [brokerMsg, setBrokerMsg] = useState("");
+
   // Persist strategy tags
   useEffect(() => {
     localStorage.setItem("aiedge_strategies", JSON.stringify(strategyTags));
@@ -630,6 +637,89 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         setMatched(m);
         setLoaded(true);
       }
+    }
+  }, []);
+
+  // Check broker connection status on mount
+  useEffect(() => {
+    db.getBrokerStatus()
+      .then(status => setBrokerStatus(status))
+      .catch(() => setBrokerStatus(null));
+  }, []);
+
+  // Handle ?broker=connected callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('broker') === 'connected') {
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+      // Refresh broker status
+      db.getBrokerStatus()
+        .then(status => {
+          setBrokerStatus(status);
+          if (status?.connected) {
+            setBrokerMsg('Broker connected! Click "Sync Trades" to import your trades.');
+            setTimeout(() => setBrokerMsg(''), 5000);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const handleConnectBroker = useCallback(async () => {
+    setBrokerLoading(true);
+    setBrokerMsg('');
+    try {
+      const { redirectURI } = await db.connectBroker();
+      if (redirectURI) {
+        window.location.href = redirectURI;
+      }
+    } catch (err) {
+      setBrokerMsg(err.message);
+    }
+    setBrokerLoading(false);
+  }, []);
+
+  const handleSyncTrades = useCallback(async () => {
+    setSyncLoading(true);
+    setBrokerMsg('');
+    try {
+      const result = await db.syncBrokerTrades();
+      setBrokerMsg(result.message);
+      // Reload trades from DB after sync
+      if (result.trades > 0 && user) {
+        const trades = await db.loadTrades(user.id);
+        const formatted = trades.map(t => ({
+          date: t.date, symbol: t.symbol, description: t.description,
+          action: t.action, quantity: Number(t.quantity), price: Number(t.price),
+          commission: Number(t.commission), fees: Number(t.fees), amount: Number(t.amount),
+        }));
+        const m = matchTrades(formatted);
+        if (m.length) {
+          setMatched(m);
+          setLoaded(true);
+          setDetectedBroker("SnapTrade");
+        }
+      }
+      // Refresh status
+      const status = await db.getBrokerStatus();
+      setBrokerStatus(status);
+      setTimeout(() => setBrokerMsg(''), 5000);
+    } catch (err) {
+      setBrokerMsg(err.message);
+    }
+    setSyncLoading(false);
+  }, [user]);
+
+  const handleDisconnectBroker = useCallback(async () => {
+    if (!confirm('Disconnect your broker? Your imported trades will be kept.')) return;
+    try {
+      await db.disconnectBroker();
+      setBrokerStatus({ connected: false, accounts: [] });
+      setBrokerMsg('Broker disconnected.');
+      setTimeout(() => setBrokerMsg(''), 3000);
+    } catch (err) {
+      setBrokerMsg(err.message);
     }
   }, []);
 
@@ -781,8 +871,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <h1 style={{ fontSize: "clamp(32px, 6vw, 48px)", fontWeight: 700, letterSpacing: "-0.045em", marginBottom: 12, lineHeight: 1.05 }}>
               Import your trades.
             </h1>
-            <p style={{ color: C.textDim, fontSize: "clamp(15px, 2vw, 17px)", maxWidth: 400, margin: "0 auto", lineHeight: 1.5, fontWeight: 400 }}>
-              Drop a CSV and see your Van Tharp analytics in seconds.
+            <p style={{ color: C.textDim, fontSize: "clamp(15px, 2vw, 17px)", maxWidth: 440, margin: "0 auto", lineHeight: 1.5, fontWeight: 400 }}>
+              Connect your broker for automatic sync, or drop a CSV.
             </p>
           </div>
 
@@ -851,6 +941,99 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 </div>
                 <div style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} per trade</div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Connect Broker ── */}
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
+              Or connect your broker
+            </div>
+            <div style={{
+              maxWidth: 540, margin: "0 auto",
+              background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 20,
+              padding: "24px 28px",
+            }}>
+              {brokerStatus?.connected ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: C.green }} />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Broker Connected</span>
+                  </div>
+                  {brokerStatus.accounts?.length > 0 && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      {brokerStatus.accounts.map(a => (
+                        <span key={a.id} style={{
+                          padding: "4px 12px", borderRadius: 980, fontSize: 11, fontWeight: 500,
+                          background: "rgba(52,199,89,0.08)", color: C.green, border: `0.5px solid rgba(52,199,89,0.15)`,
+                        }}>{a.institution} — {a.name || a.number}</span>
+                      ))}
+                    </div>
+                  )}
+                  {brokerStatus.lastSync && (
+                    <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14 }}>
+                      Last synced: {new Date(brokerStatus.lastSync).toLocaleString()}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={handleSyncTrades} disabled={syncLoading} style={{
+                      flex: 1, padding: "12px 20px", border: "none", borderRadius: 12,
+                      background: C.accent, color: "white", fontSize: 14, fontWeight: 600,
+                      cursor: syncLoading ? "wait" : "pointer", fontFamily: "inherit",
+                      opacity: syncLoading ? 0.6 : 1, transition: "opacity 0.2s",
+                    }}>
+                      {syncLoading ? "Syncing..." : "Sync Trades"}
+                    </button>
+                    <button onClick={handleConnectBroker} disabled={brokerLoading} style={{
+                      padding: "12px 20px", border: `0.5px solid ${C.border}`, borderRadius: 12,
+                      background: "transparent", color: C.textDim, fontSize: 14, fontWeight: 500,
+                      cursor: brokerLoading ? "wait" : "pointer", fontFamily: "inherit",
+                    }}>
+                      {brokerLoading ? "..." : "Add Account"}
+                    </button>
+                    <button onClick={handleDisconnectBroker} style={{
+                      padding: "12px 16px", border: `0.5px solid rgba(255,59,48,0.2)`, borderRadius: 12,
+                      background: "transparent", color: C.red, fontSize: 12, fontWeight: 500,
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}>Disconnect</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(52,199,89,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em", marginBottom: 6 }}>Connect your brokerage</div>
+                  <div style={{ fontSize: 13, color: C.textDim, marginBottom: 20, lineHeight: 1.5 }}>
+                    Automatically sync trades from your broker. No more CSV uploads.
+                  </div>
+                  <button onClick={handleConnectBroker} disabled={brokerLoading} style={{
+                    padding: "12px 28px", border: "none", borderRadius: 12,
+                    background: C.green, color: "white", fontSize: 15, fontWeight: 600,
+                    cursor: brokerLoading ? "wait" : "pointer", fontFamily: "inherit",
+                    opacity: brokerLoading ? 0.6 : 1, transition: "opacity 0.2s",
+                  }}>
+                    {brokerLoading ? "Connecting..." : "Connect Broker"}
+                  </button>
+                  <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
+                    {["TD Ameritrade", "Alpaca", "Questrade", "Tradier", "Robinhood", "Wealthsimple", "Interactive Brokers"].map(b => (
+                      <span key={b} style={{ padding: "3px 9px", borderRadius: 980, fontSize: 9, fontWeight: 500, background: "rgba(255,255,255,0.04)", color: C.textMuted, border: `0.5px solid ${C.border}` }}>{b}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {brokerMsg && (
+                <div style={{
+                  marginTop: 14, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                  background: brokerMsg.toLowerCase().includes("error") || brokerMsg.toLowerCase().includes("fail")
+                    ? "rgba(255,59,48,0.08)" : "rgba(52,199,89,0.08)",
+                  color: brokerMsg.toLowerCase().includes("error") || brokerMsg.toLowerCase().includes("fail")
+                    ? C.red : C.green,
+                }}>{brokerMsg}</div>
+              )}
             </div>
           </div>
 
@@ -1008,6 +1191,14 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
             onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
           >New Import</button>
+          {brokerStatus?.connected && (
+            <button onClick={handleSyncTrades} disabled={syncLoading} style={{
+              padding: "6px 14px", border: `0.5px solid rgba(52,199,89,0.3)`, borderRadius: 10,
+              background: "transparent", color: C.green, fontSize: 11, cursor: syncLoading ? "wait" : "pointer",
+              fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, transition: "all 0.2s",
+              opacity: syncLoading ? 0.6 : 1,
+            }}>{syncLoading ? "Syncing..." : "Sync Broker"}</button>
+          )}
           {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "6px 14px", border: `0.5px solid rgba(255,59,48,0.2)`, borderRadius: 10, background: "transparent", color: C.red, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500 }}>Clear</button>}
         </div>
       </div>
