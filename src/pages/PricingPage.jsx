@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 const C = {
   bg: "#000000", surface: "#111111", surfaceRaised: "#1a1a1a",
@@ -8,13 +9,14 @@ const C = {
   purple: "#af52de", cyan: "#5ac8fa", white: "#ffffff",
 };
 
-export default function PricingPage() {
+export default function PricingPage({ session, plan: currentPlan }) {
   const navigate = useNavigate();
   const [annual, setAnnual] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
 
   const tiers = [
     {
-      name: "Free", price: 0,
+      name: "Free", key: "free", price: 0,
       desc: "Get started with basic Van Tharp analytics",
       cta: "Start Free",
       features: [
@@ -30,7 +32,7 @@ export default function PricingPage() {
       ],
     },
     {
-      name: "Pro", price: annual ? 24 : 29,
+      name: "Pro", key: "pro", price: annual ? 24 : 29,
       desc: "Full analytics suite for serious traders",
       cta: "Start Pro Trial", popular: true,
       features: [
@@ -50,7 +52,7 @@ export default function PricingPage() {
       ],
     },
     {
-      name: "Elite", price: annual ? 59 : 69,
+      name: "Elite", key: "elite", price: annual ? 59 : 69,
       desc: "AI-powered coaching and professional tools",
       cta: "Start Elite Trial",
       features: [
@@ -65,6 +67,76 @@ export default function PricingPage() {
     },
   ];
 
+  const handleCheckout = async (plan) => {
+    setCheckoutLoading(plan);
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authSession.access_token}`,
+        },
+        body: JSON.stringify({ plan, period: annual ? 'annual' : 'monthly' }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout error:', data.error);
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+    }
+    setCheckoutLoading(null);
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const res = await fetch('/api/create-portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authSession.access_token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Portal error:', err);
+    }
+  };
+
+  const getCtaLabel = (tierKey) => {
+    if (!session) return tierKey === 'free' ? 'Start Free' : `Start ${tierKey === 'pro' ? 'Pro' : 'Elite'} Trial`;
+    if (currentPlan === tierKey) return 'Current Plan';
+    if (tierKey === 'free') return 'Free Plan';
+    if (currentPlan === 'elite' && tierKey === 'pro') return 'Current: Elite';
+    return `Upgrade to ${tierKey === 'pro' ? 'Pro' : 'Elite'}`;
+  };
+
+  const isCtaDisabled = (tierKey) => {
+    if (!session) return false;
+    if (currentPlan === tierKey) return true;
+    if (tierKey === 'free') return true;
+    if (currentPlan === 'elite' && tierKey === 'pro') return true;
+    return false;
+  };
+
+  const handleCtaClick = (tierKey) => {
+    if (!session) {
+      navigate("/login?signup=1");
+      return;
+    }
+    if (isCtaDisabled(tierKey)) return;
+    handleCheckout(tierKey);
+  };
+
   return (
     <div style={{
       minHeight: "100vh", background: C.bg,
@@ -75,10 +147,7 @@ export default function PricingPage() {
 
       {/* Nav */}
       <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        backdropFilter: "saturate(180%) blur(20px)",
-        WebkitBackdropFilter: "saturate(180%) blur(20px)",
-        background: "rgba(0,0,0,0.72)",
+        background: "#000",
         borderBottom: "0.5px solid rgba(255,255,255,0.08)",
       }}>
         <div style={{
@@ -92,21 +161,39 @@ export default function PricingPage() {
             <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em" }}>TradeScope</span>
           </div>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <button onClick={() => navigate("/login")} style={{
-              background: "none", border: "none", color: C.textSecondary,
-              fontSize: 12, fontWeight: 400, cursor: "pointer", fontFamily: "inherit",
-            }}>Sign In</button>
-            <button onClick={() => navigate("/login?signup=1")} style={{
-              padding: "8px 20px", border: "none", borderRadius: 980,
-              background: C.accent, color: C.white, fontSize: 13, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>Get Started</button>
+            {session ? (
+              <>
+                {currentPlan !== 'free' && (
+                  <button onClick={handleManageSubscription} style={{
+                    background: "none", border: "none", color: C.accent,
+                    fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
+                  }}>Manage Subscription</button>
+                )}
+                <button onClick={() => navigate("/dashboard")} style={{
+                  padding: "8px 20px", border: "none", borderRadius: 980,
+                  background: C.accent, color: C.white, fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}>Dashboard</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => navigate("/login")} style={{
+                  background: "none", border: "none", color: C.textSecondary,
+                  fontSize: 12, fontWeight: 400, cursor: "pointer", fontFamily: "inherit",
+                }}>Sign In</button>
+                <button onClick={() => navigate("/login?signup=1")} style={{
+                  padding: "8px 20px", border: "none", borderRadius: 980,
+                  background: C.accent, color: C.white, fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}>Get Started</button>
+              </>
+            )}
           </div>
         </div>
       </nav>
 
       {/* Header */}
-      <section style={{ textAlign: "center", padding: "120px 24px 40px", maxWidth: 600, margin: "0 auto" }}>
+      <section style={{ textAlign: "center", padding: "80px 24px 40px", maxWidth: 600, margin: "0 auto" }}>
         <h1 style={{
           fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 700,
           letterSpacing: "-0.04em", marginBottom: 16, lineHeight: 1.08,
@@ -144,73 +231,128 @@ export default function PricingPage() {
         display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16,
         alignItems: "start",
       }}>
-        {tiers.map(tier => (
-          <div key={tier.name} style={{
-            background: C.surface, borderRadius: 20,
-            border: tier.popular ? `1px solid ${C.accent}40` : "0.5px solid rgba(255,255,255,0.06)",
-            padding: "36px 30px", position: "relative",
-            boxShadow: tier.popular ? "0 0 60px rgba(41,151,255,0.08)" : "none",
-            transition: "transform 0.3s ease",
-          }}
-            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-          >
-            {tier.popular && (
-              <div style={{
-                position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                padding: "5px 18px", borderRadius: 980, fontSize: 11, fontWeight: 600,
-                background: C.accent, color: C.white, letterSpacing: "0.02em",
-              }}>Most Popular</div>
-            )}
+        {tiers.map(tier => {
+          const disabled = isCtaDisabled(tier.key);
+          const loading = checkoutLoading === tier.key;
 
-            <div style={{ marginBottom: 28 }}>
-              <h3 style={{ fontSize: 22, fontWeight: 600, color: C.text, marginBottom: 8 }}>{tier.name}</h3>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
-                <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: "-0.04em" }}>
-                  ${tier.price}
-                </span>
-                {tier.price > 0 && <span style={{ fontSize: 15, color: C.textSecondary, fontWeight: 400 }}>/month</span>}
-              </div>
-              <p style={{ fontSize: 14, color: C.textSecondary, margin: 0, fontWeight: 400 }}>{tier.desc}</p>
-              {tier.price > 0 && annual && (
-                <p style={{ fontSize: 12, color: C.textTertiary, marginTop: 6 }}>
-                  Billed annually (${tier.price * 12}/yr)
-                </p>
-              )}
-            </div>
-
-            <button onClick={() => navigate("/login?signup=1")} style={{
-              width: "100%", padding: "14px 24px", borderRadius: 12, fontSize: 15, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit", marginBottom: 28, transition: "all 0.2s",
-              border: tier.popular ? "none" : "0.5px solid rgba(255,255,255,0.12)",
-              background: tier.popular ? C.accent : "rgba(255,255,255,0.06)",
-              color: tier.popular ? C.white : C.text,
+          return (
+            <div key={tier.name} style={{
+              background: C.surface, borderRadius: 20,
+              border: tier.popular ? `1px solid ${C.accent}40` : "0.5px solid rgba(255,255,255,0.06)",
+              padding: "36px 30px", position: "relative",
+              boxShadow: tier.popular ? "0 0 60px rgba(41,151,255,0.08)" : "none",
+              transition: "transform 0.3s ease",
             }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >{tier.cta}</button>
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              {tier.popular && (
+                <div style={{
+                  position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+                  padding: "5px 18px", borderRadius: 980, fontSize: 11, fontWeight: 600,
+                  background: C.accent, color: C.white, letterSpacing: "0.02em",
+                }}>Most Popular</div>
+              )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {tier.features.map(f => (
-                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}>
-                    <polyline points="20,6 9,17 4,12" />
-                  </svg>
-                  <span style={{ fontSize: 14, color: C.text, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
+              {/* Current Plan badge */}
+              {session && currentPlan === tier.key && (
+                <div style={{
+                  position: "absolute", top: tier.popular ? 16 : -12, right: 16,
+                  padding: "4px 12px", borderRadius: 980, fontSize: 10, fontWeight: 600,
+                  background: C.green, color: "#000", letterSpacing: "0.02em",
+                  ...(tier.popular ? {} : { top: -12 }),
+                }}>Your Plan</div>
+              )}
+
+              <div style={{ marginBottom: 28 }}>
+                <h3 style={{ fontSize: 22, fontWeight: 600, color: C.text, marginBottom: 8 }}>{tier.name}</h3>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
+                  <span style={{ fontSize: 48, fontWeight: 700, letterSpacing: "-0.04em" }}>
+                    ${tier.price}
+                  </span>
+                  {tier.price > 0 && <span style={{ fontSize: 15, color: C.textSecondary, fontWeight: 400 }}>/month</span>}
                 </div>
-              ))}
-              {tier.excluded.map(f => (
-                <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="1.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}>
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                  <span style={{ fontSize: 14, color: C.textTertiary, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
-                </div>
-              ))}
+                <p style={{ fontSize: 14, color: C.textSecondary, margin: 0, fontWeight: 400 }}>{tier.desc}</p>
+                {tier.price > 0 && annual && (
+                  <p style={{ fontSize: 12, color: C.textTertiary, marginTop: 6 }}>
+                    Billed annually (${tier.price * 12}/yr)
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => handleCtaClick(tier.key)}
+                disabled={disabled || loading}
+                style={{
+                  width: "100%", padding: "14px 24px", borderRadius: 12, fontSize: 15, fontWeight: 600,
+                  cursor: disabled || loading ? "default" : "pointer",
+                  fontFamily: "inherit", marginBottom: 28, transition: "all 0.2s",
+                  border: tier.popular && !disabled ? "none" : "0.5px solid rgba(255,255,255,0.12)",
+                  background: disabled ? "rgba(255,255,255,0.04)" : (tier.popular ? C.accent : "rgba(255,255,255,0.06)"),
+                  color: disabled ? C.textTertiary : (tier.popular ? C.white : C.text),
+                  opacity: loading ? 0.6 : 1,
+                }}
+                onMouseEnter={e => { if (!disabled && !loading) e.currentTarget.style.opacity = "0.85"; }}
+                onMouseLeave={e => { if (!disabled && !loading) e.currentTarget.style.opacity = "1"; }}
+              >
+                {loading ? "Redirecting..." : getCtaLabel(tier.key)}
+              </button>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {tier.features.map(f => (
+                  <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}>
+                      <polyline points="20,6 9,17 4,12" />
+                    </svg>
+                    <span style={{ fontSize: 14, color: C.text, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
+                  </div>
+                ))}
+                {tier.excluded.map(f => (
+                  <div key={f} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="1.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}>
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    <span style={{ fontSize: 14, color: C.textTertiary, lineHeight: 1.45, fontWeight: 400 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
+
+      {/* Manage Subscription banner for paid users */}
+      {session && currentPlan !== 'free' && (
+        <section style={{
+          maxWidth: 640, margin: "0 auto 60px", padding: "0 24px",
+        }}>
+          <div style={{
+            background: C.surface, borderRadius: 16, padding: "24px 28px",
+            border: "0.5px solid rgba(255,255,255,0.06)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            flexWrap: "wrap", gap: 16,
+          }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+                Manage your subscription
+              </div>
+              <div style={{ fontSize: 13, color: C.textSecondary }}>
+                Update payment method, change plan, or cancel
+              </div>
+            </div>
+            <button onClick={handleManageSubscription} style={{
+              padding: "10px 24px", borderRadius: 980, border: "none",
+              background: "rgba(255,255,255,0.06)", color: C.text,
+              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+            >
+              Manage
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* FAQ */}
       <section style={{ maxWidth: 640, margin: "0 auto 100px", padding: "0 24px" }}>
@@ -225,7 +367,7 @@ export default function PricingPage() {
           { q: "Which brokers are supported?", a: "Free supports Fidelity CSV exports. Pro and Elite add Schwab, Interactive Brokers, Webull, Tradovate, AMP Futures (CQG/Rithmic), and TradeLocker, with more brokers added regularly." },
           { q: "How does the AI Trade Coach work?", a: "It analyzes your trade history, journal entries, and performance patterns to surface personalized insights — your best strategy, worst trading days, emotional patterns tied to losses, and more." },
           { q: "Is my data secure?", a: "All data is encrypted in transit and at rest. We use Supabase with row-level security — you can only access your own trades. We never share or sell your data." },
-          { q: "Can I cancel anytime?", a: "Yes. Cancel anytime from your account settings. You'll keep access through the end of your billing period." },
+          { q: "Can I cancel anytime?", a: "Yes. Cancel anytime from your account settings or the Manage Subscription button above. You'll keep access through the end of your billing period." },
           { q: "What is Van Tharp's methodology?", a: "Van Tharp's framework measures trading system quality through R-multiples, SQN, expectancy, and position sizing. It focuses on the math of your edge, not just win rate." },
         ].map(item => (
           <details key={item.q} style={{

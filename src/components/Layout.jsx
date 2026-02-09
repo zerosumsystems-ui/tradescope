@@ -9,7 +9,9 @@ const navItems = [
   { to: "/insights", label: "Insights", icon: "M12 2a10 10 0 1 0 10 10H12V2zM20 12a8 8 0 0 1-8 8" },
 ];
 
-export default function Layout({ user, onSignOut }) {
+const planColors = { free: "#6e6e73", pro: "#2997ff", elite: "#af52de" };
+
+export default function Layout({ user, plan, onSignOut }) {
   const navigate = useNavigate();
 
   return (
@@ -43,6 +45,13 @@ export default function Layout({ user, onSignOut }) {
 
           {/* User */}
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {plan && plan !== 'free' && (
+              <span className="hide-mobile" style={{
+                padding: "3px 10px", borderRadius: 980, fontSize: 10, fontWeight: 600,
+                background: `${planColors[plan]}18`, color: planColors[plan],
+                letterSpacing: "0.04em", textTransform: "uppercase",
+              }}>{plan}</span>
+            )}
             {user && <span className="hide-mobile" style={{ fontSize: 12, color: "#6e6e73", fontWeight: 500 }}>{user.email}</span>}
             {onSignOut && (
               <button onClick={onSignOut} style={{
