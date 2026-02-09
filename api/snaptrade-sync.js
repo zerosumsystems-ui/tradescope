@@ -162,6 +162,8 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error('SnapTrade sync error:', err);
-    return res.status(500).json({ error: err.message });
+    const detail = err.response?.data || err.responseBody || err.body;
+    const msg = typeof detail === 'object' ? JSON.stringify(detail) : (detail || err.message);
+    return res.status(err.response?.status || err.status || 500).json({ error: msg });
   }
 }
