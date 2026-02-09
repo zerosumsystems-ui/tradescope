@@ -77,7 +77,7 @@ function AuthScreen({ onAuth }) {
             </svg>
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.03em' }}>
-            {isSignUp ? 'Create your account' : 'Sign in to TradeScope'}
+            {isSignUp ? 'Create your account' : 'Sign in to AI Edge'}
           </h1>
           <p style={{ color: C.textSecondary, fontSize: 15, fontWeight: 400 }}>
             Van Tharp analytics for your trades

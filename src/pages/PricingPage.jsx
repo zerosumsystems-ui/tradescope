@@ -158,7 +158,7 @@ export default function PricingPage({ session, plan: currentPlan }) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2.5" strokeLinecap="round">
               <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
             </svg>
-            <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em" }}>TradeScope</span>
+            <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em" }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             {session ? (
@@ -397,7 +397,7 @@ export default function PricingPage({ session, plan: currentPlan }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textTertiary} strokeWidth="2" strokeLinecap="round">
             <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
           </svg>
-          <span style={{ fontSize: 13, fontWeight: 500, color: C.textTertiary }}>TradeScope</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: C.textTertiary }}>AI Edge</span>
         </div>
         <span style={{ fontSize: 12, color: C.textTertiary }}>Van Tharp analytics for systematic traders</span>
       </footer>

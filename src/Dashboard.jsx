@@ -607,7 +607,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [accountSize, setAccountSize] = useState(initialSettings?.account_size || 100000);
   const [saveStatus, setSaveStatus] = useState("");
   const [strategyTags, setStrategyTags] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem("aiedge_strategies") || localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
   });
   const [filterStrategy, setFilterStrategy] = useState("");
   const [detectedBroker, setDetectedBroker] = useState("");
@@ -615,7 +615,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
   // Persist strategy tags
   useEffect(() => {
-    localStorage.setItem("tradescope_strategies", JSON.stringify(strategyTags));
+    localStorage.setItem("aiedge_strategies", JSON.stringify(strategyTags));
   }, [strategyTags]);
 
   const setTradeStrategy = useCallback((tradeKey, strategy) => {
