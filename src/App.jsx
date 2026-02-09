@@ -10,6 +10,7 @@ import InsightsPage from './pages/InsightsPage'
 import PricingPage from './pages/PricingPage'
 import HeatmapPage from './pages/HeatmapPage'
 import RiskOfRuinPage from './pages/RiskOfRuinPage'
+import { useSubscription } from './hooks/useSubscription'
 
 import Layout from './components/Layout'
 
@@ -135,6 +136,7 @@ export default function App() {
   const [savedTrades, setSavedTrades] = useState([])
   const [settings, setSettings] = useState({ account_size: 100000, risk_percent: 1 })
   const [dashboardStats, setDashboardStats] = useState(null)
+  const { plan, isPro, isElite } = useSubscription(session?.user?.id)
 
   // Check existing session on mount
   useEffect(() => {
@@ -236,10 +238,10 @@ export default function App() {
       <Route path="/login" element={session ? <Navigate to="/dashboard" replace /> : <AuthScreen onAuth={setSession} />} />
 
       {/* Public routes */}
-      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/pricing" element={<PricingPage session={session} plan={plan} />} />
 
       {/* Authenticated routes */}
-      <Route element={session ? <Layout user={session.user} onSignOut={handleSignOut} /> : <Navigate to="/login" replace />}>
+      <Route element={session ? <Layout user={session.user} plan={plan} onSignOut={handleSignOut} /> : <Navigate to="/login" replace />}>
         <Route path="/dashboard" element={
           <TradeDashboard
             savedTrades={savedTrades}

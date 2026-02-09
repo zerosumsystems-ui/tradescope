@@ -102,3 +102,15 @@ export async function saveSettings(userId, accountSize, riskPercent) {
   if (error) throw error
   return data
 }
+
+// ── Subscription ──
+export async function getSubscription(userId) {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
