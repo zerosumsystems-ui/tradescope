@@ -417,8 +417,8 @@ export default function LandingPage() {
           <div style={{ fontSize: 13, color: "#48484a", fontWeight: 500, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Import from any broker
           </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", maxWidth: 600, margin: "0 auto" }}>
-            {["Fidelity", "Schwab", "IBKR", "Webull", "Tradovate", "AMP Futures", "TradeLocker"].map(b => (
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", maxWidth: 800, margin: "0 auto" }}>
+            {["Fidelity", "Schwab", "E*TRADE", "Robinhood", "IBKR", "Webull", "Chase", "Vanguard", "Wells Fargo", "Questrade", "Alpaca", "Wealthsimple", "Trading212", "DEGIRO", "Public", "Zerodha", "CommSec", "Stake", "Tradovate", "AMP Futures", "TradeLocker", "25+ more"].map(b => (
               <span key={b} style={{
                 padding: "10px 22px", borderRadius: 980, fontSize: 14, fontWeight: 500,
                 background: "rgba(255,255,255,0.04)", color: "#86868b",

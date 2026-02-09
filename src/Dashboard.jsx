@@ -320,6 +320,481 @@ function parseTradeLockerCSV(csvText) {
   return trades;
 }
 
+function parseETradeCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("symbol") && (l.includes("est. comm") || l.includes("est. fee") || l.includes("execution time"))) { headerIdx = i; break; }
+    if (l.includes("symbol") && l.includes("type") && (l.includes("qty") || l.includes("quantity")) && l.includes("price") && l.includes("amount")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const type = (row["type"] || row["action"] || row["transaction type"] || "").toUpperCase();
+    if (!type.includes("BUY") && !type.includes("SELL") && !type.includes("BOUGHT") && !type.includes("SOLD")) continue;
+    const symbol = (row["symbol"] || row["u/l"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["qty"] || row["quantity"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    const price = parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0;
+    const comm = Math.abs(parseFloat((row["est. comm"] || row["commission"] || "").replace(/[,$]/g, "")) || 0);
+    const fees = Math.abs(parseFloat((row["est. fee"] || row["fee"] || row["fees"] || "").replace(/[,$]/g, "")) || 0);
+    const amount = parseFloat((row["est. amount"] || row["amount"] || "").replace(/[,$]/g, "")) || qty * price;
+    const dateStr = row["date"] || row["execution time"] || "";
+    const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+    trades.push({
+      date: datePart, symbol, description: row["description"] || "",
+      action: (type.includes("BUY") || type.includes("BOUGHT")) ? "BUY" : "SELL",
+      quantity: qty, price, commission: comm, fees, amount: Math.abs(amount),
+    });
+  }
+  return trades;
+}
+
+function parseRobinhoodCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("activity date") && l.includes("trans code") && l.includes("instrument")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const code = (row["trans code"] || "").toUpperCase();
+    if (!code.includes("BUY") && !code.includes("SELL") && code !== "STO" && code !== "BTO" && code !== "STC" && code !== "BTC") continue;
+    const instrument = (row["instrument"] || row["symbol"] || "").replace(/\s+/g, "");
+    if (!instrument) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    const isBuy = code.includes("BUY") || code === "BTO" || code === "BTC";
+    trades.push({
+      date: row["activity date"] || "", symbol: instrument, description: row["description"] || "",
+      action: isBuy ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: 0, fees: 0, amount: Math.abs(parseFloat((row["amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseQuestradeCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("transaction date") && l.includes("action") && l.includes("symbol") && (l.includes("gross amount") || l.includes("net amount"))) { headerIdx = i; break; }
+    if (l.includes("settlement date") && l.includes("action") && l.includes("symbol") && l.includes("quantity")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const action = (row["action"] || "").toUpperCase();
+    if (!action.includes("BUY") && !action.includes("SELL")) continue;
+    const symbol = (row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    const dateStr = row["transaction date"] || row["settlement date"] || "";
+    // Handle D/M/Y format common in Questrade
+    let datePart = dateStr;
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/");
+      if (parts.length === 3 && parts[0].length <= 2) datePart = `${parts[1]}/${parts[0]}/${parts[2]}`;
+    }
+    trades.push({
+      date: datePart.split(" ")[0] || datePart, symbol, description: row["description"] || "",
+      action: action.includes("BUY") ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: Math.abs(parseFloat((row["commission"] || "").replace(/[,$]/g, "")) || 0),
+      fees: 0, amount: Math.abs(parseFloat((row["gross amount"] || row["net amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseAlpacaCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("symbol") && l.includes("side") && (l.includes("filled_avg_price") || l.includes("filled avg price") || l.includes("filled_qty"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const side = (row["side"] || "").toUpperCase();
+    if (side !== "BUY" && side !== "SELL") continue;
+    const status = (row["status"] || "").toLowerCase();
+    if (status && status !== "filled" && status !== "partially_filled") continue;
+    const symbol = (row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat(row["filled_qty"] || row["qty"] || "0") || 0);
+    if (qty === 0) continue;
+    const price = parseFloat(row["filled_avg_price"] || row["price"] || "0") || 0;
+    const dateStr = row["filled_at"] || row["created_at"] || row["submitted_at"] || "";
+    const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+    trades.push({
+      date: datePart, symbol, description: "",
+      action: side, quantity: qty, price,
+      commission: 0, fees: 0, amount: qty * price,
+    });
+  }
+  return trades;
+}
+
+function parseWealthSimpleCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("date") && (l.includes("transaction") || l.includes("type")) && l.includes("symbol") && l.includes("quantity") && l.includes("price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const type = (row["transaction"] || row["type"] || row["action"] || "").toUpperCase();
+    if (!type.includes("BUY") && !type.includes("SELL")) continue;
+    const symbol = (row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || row["shares"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    trades.push({
+      date: (row["date"] || "").split(" ")[0], symbol, description: row["description"] || "",
+      action: type.includes("BUY") ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: 0, fees: 0,
+      amount: Math.abs(parseFloat((row["amount"] || row["market value"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseTrading212CSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("action") && l.includes("ticker") && (l.includes("no. of shares") || l.includes("no of shares")) && (l.includes("price / share") || l.includes("price/share"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const action = (row["action"] || "").toUpperCase();
+    if (!action.includes("BUY") && !action.includes("SELL") && action !== "MARKET BUY" && action !== "MARKET SELL" && action !== "LIMIT BUY" && action !== "LIMIT SELL") continue;
+    const ticker = (row["ticker"] || row["symbol"] || "").replace(/\s+/g, "");
+    if (!ticker) continue;
+    const qty = Math.abs(parseFloat(row["no. of shares"] || row["no of shares"] || row["quantity"] || "0") || 0);
+    if (qty === 0) continue;
+    const price = parseFloat((row["price / share"] || row["price/share"] || row["price"] || "0").replace(/[,$]/g, "")) || 0;
+    const total = Math.abs(parseFloat((row["total"] || "0").replace(/[,$]/g, "")) || 0);
+    const dateStr = row["time"] || row["date"] || "";
+    const datePart = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0] || dateStr;
+    const isBuy = action.includes("BUY");
+    const charge = Math.abs(parseFloat((row["charge amount"] || row["charges"] || "0").replace(/[,$]/g, "")) || 0);
+    trades.push({
+      date: datePart, symbol: ticker, description: row["name"] || "",
+      action: isBuy ? "BUY" : "SELL",
+      quantity: qty, price, commission: charge, fees: 0, amount: total || qty * price,
+    });
+  }
+  return trades;
+}
+
+function parseDEGIROCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("product") && l.includes("isin") && (l.includes("number") || l.includes("quantity")) && (l.includes("local value") || l.includes("transaction"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const qty = parseFloat(row["number"] || row["quantity"] || "0") || 0;
+    if (qty === 0) continue;
+    const product = row["product"] || "";
+    if (!product) continue;
+    const price = Math.abs(parseFloat((row["price"] || "0").replace(/[,$]/g, "")) || 0);
+    const txCosts = Math.abs(parseFloat((row["transaction costs"] || row["transaction and/or third"] || "0").replace(/[,$]/g, "")) || 0);
+    const dateStr = row["date"] || "";
+    // DEGIRO: positive qty = buy, negative qty = sell
+    trades.push({
+      date: dateStr.split(" ")[0] || dateStr,
+      symbol: (row["isin"] || product.split(" ")[0] || "").replace(/\s+/g, ""),
+      description: product, action: qty > 0 ? "BUY" : "SELL",
+      quantity: Math.abs(qty), price, commission: txCosts, fees: 0,
+      amount: Math.abs(parseFloat((row["total"] || row["value"] || row["local value"] || "0").replace(/[,$]/g, "")) || qty * price),
+    });
+  }
+  return trades;
+}
+
+function parseZerodhaCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("tradingsymbol") && l.includes("trade_type") && l.includes("quantity") && l.includes("price")) { headerIdx = i; break; }
+    if (l.includes("trading symbol") && l.includes("trade type") && l.includes("quantity") && l.includes("price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const tradeType = (row["trade_type"] || row["trade type"] || "").toUpperCase();
+    if (!tradeType.includes("BUY") && !tradeType.includes("SELL")) continue;
+    const symbol = (row["tradingsymbol"] || row["trading symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat(row["quantity"] || "0") || 0);
+    if (qty === 0) continue;
+    const dateStr = row["trade_date"] || row["trade date"] || "";
+    trades.push({
+      date: dateStr.split(" ")[0] || dateStr, symbol, description: row["exchange"] || "",
+      action: tradeType.includes("BUY") ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat(row["price"] || "0") || 0,
+      commission: 0, fees: 0, amount: qty * (parseFloat(row["price"] || "0") || 0),
+    });
+  }
+  return trades;
+}
+
+function parseChaseCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("trade date") && l.includes("symbol") && (l.includes("trans type") || l.includes("type")) && (l.includes("quantity") || l.includes("qty"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const type = (row["trans type"] || row["type"] || row["action"] || "").toUpperCase();
+    if (!type.includes("BUY") && !type.includes("SELL") && !type.includes("BOUGHT") && !type.includes("SOLD")) continue;
+    const symbol = (row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || row["qty"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    trades.push({
+      date: (row["trade date"] || "").split(" ")[0], symbol, description: row["description"] || "",
+      action: (type.includes("BUY") || type.includes("BOUGHT")) ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: Math.abs(parseFloat((row["commission"] || "").replace(/[,$]/g, "")) || 0),
+      fees: Math.abs(parseFloat((row["fees"] || "").replace(/[,$]/g, "")) || 0),
+      amount: Math.abs(parseFloat((row["amount"] || row["net amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseVanguardCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("trade date") && l.includes("transaction type") && (l.includes("share price") || l.includes("shares")) && l.includes("symbol")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 5) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const type = (row["transaction type"] || "").toUpperCase();
+    if (!type.includes("BUY") && !type.includes("SELL")) continue;
+    const symbol = (row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["shares"] || row["quantity"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    trades.push({
+      date: (row["trade date"] || "").split(" ")[0], symbol,
+      description: row["investment name"] || row["name"] || "",
+      action: type.includes("BUY") ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["share price"] || row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: Math.abs(parseFloat((row["commission"] || "").replace(/[,$]/g, "")) || 0),
+      fees: 0, amount: Math.abs(parseFloat((row["principal amount"] || row["net amount"] || row["amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parsePublicCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("side") && l.includes("symbol") && (l.includes("quantity") || l.includes("qty")) && l.includes("price") && !l.includes("filled qty") && !l.includes("avg price")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const side = (row["side"] || "").toUpperCase();
+    if (!side.includes("BUY") && !side.includes("SELL")) continue;
+    const symbol = (row["symbol"] || row["ticker"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || row["qty"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    const dateStr = row["date"] || row["time"] || "";
+    trades.push({
+      date: dateStr.split(" ")[0] || dateStr, symbol, description: row["name"] || row["description"] || "",
+      action: side.includes("BUY") ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: 0, fees: 0,
+      amount: Math.abs(parseFloat((row["total"] || row["amount"] || row["value"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseCommSecCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if ((l.includes("security code") || l.includes("code")) && l.includes("brokerage") && (l.includes("quantity") || l.includes("units"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const type = (row["type"] || row["action"] || row["transaction type"] || row["details"] || "").toUpperCase();
+    if (!type.includes("BUY") && !type.includes("SELL") && !type.includes("B") && !type.includes("S")) continue;
+    const isBuy = type.includes("BUY") || (type === "B");
+    const symbol = (row["security code"] || row["code"] || row["symbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || row["units"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    trades.push({
+      date: (row["date"] || row["trade date"] || "").split(" ")[0], symbol,
+      description: row["security name"] || row["name"] || "",
+      action: isBuy ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || row["unit price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: Math.abs(parseFloat((row["brokerage"] || row["commission"] || "").replace(/[,$]/g, "")) || 0),
+      fees: Math.abs(parseFloat((row["gst"] || row["fees"] || "").replace(/[,$]/g, "")) || 0),
+      amount: Math.abs(parseFloat((row["net proceeds"] || row["consideration"] || row["amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
+function parseGenericBrokerCSV(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if ((l.includes("date") || l.includes("time")) && (l.includes("symbol") || l.includes("ticker") || l.includes("instrument") || l.includes("stock") || l.includes("code")) && (l.includes("quantity") || l.includes("qty") || l.includes("shares") || l.includes("units")) && (l.includes("price") || l.includes("amount"))) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$"]/g, ""));
+  const trades = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",").map(v => v.trim().replace(/"/g, ""));
+    if (vals.length < 4) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = vals[idx] || ""; });
+    const action = (row["action"] || row["type"] || row["transaction type"] || row["trans type"] || row["side"] || row["transaction"] || row["trade type"] || row["trade_type"] || "").toUpperCase();
+    if (!action.includes("BUY") && !action.includes("SELL") && !action.includes("BOUGHT") && !action.includes("SOLD") && !action.includes("LONG") && !action.includes("SHORT")) continue;
+    const isBuy = action.includes("BUY") || action.includes("BOUGHT") || action.includes("LONG");
+    const symbol = (row["symbol"] || row["ticker"] || row["instrument"] || row["stock"] || row["code"] || row["security code"] || row["tradingsymbol"] || "").replace(/\s+/g, "");
+    if (!symbol) continue;
+    const qty = Math.abs(parseFloat((row["quantity"] || row["qty"] || row["shares"] || row["units"] || row["no. of shares"] || row["number"] || row["filled_qty"] || "").replace(/[,$]/g, "")) || 0);
+    if (qty === 0) continue;
+    const dateStr = row["date"] || row["trade date"] || row["trade_date"] || row["transaction date"] || row["activity date"] || row["time"] || "";
+    trades.push({
+      date: (dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.split(" ")[0]) || dateStr, symbol,
+      description: row["description"] || row["name"] || row["product"] || "",
+      action: isBuy ? "BUY" : "SELL",
+      quantity: qty, price: parseFloat((row["price"] || row["share price"] || row["price / share"] || row["filled_avg_price"] || row["avg price"] || "").replace(/[,$]/g, "")) || 0,
+      commission: Math.abs(parseFloat((row["commission"] || row["comm"] || row["brokerage"] || row["est. comm"] || "").replace(/[,$]/g, "")) || 0),
+      fees: Math.abs(parseFloat((row["fees"] || row["fee"] || row["charges"] || row["est. fee"] || row["transaction costs"] || "").replace(/[,$]/g, "")) || 0),
+      amount: Math.abs(parseFloat((row["amount"] || row["total"] || row["net amount"] || row["value"] || row["principal amount"] || "").replace(/[,$]/g, "")) || 0),
+    });
+  }
+  return trades;
+}
+
 function parseCSVAuto(csvText) {
   const lower = csvText.toLowerCase();
   // Fidelity: "Run Date" + "YOU BOUGHT"
@@ -354,14 +829,82 @@ function parseCSVAuto(csvText) {
   // Webull: "side" + "avg price" or "filled qty"
   if ((lower.includes("side") && lower.includes("avg price")) || (lower.includes("filled qty"))) return { trades: parseWebullCSV(csvText), broker: "Webull" };
   // Schwab: "action" + "symbol" + "quantity" (no "Run Date")
-  if (lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date")) {
+  if (lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date") && !lower.includes("ticker") && !lower.includes("isin")) {
     const schwab = parseSchwabCSV(csvText);
     if (schwab.length) return { trades: schwab, broker: "Schwab" };
+  }
+  // E*TRADE: "execution time" or "est. comm" or "est. fee"
+  if (lower.includes("symbol") && (lower.includes("est. comm") || lower.includes("est. fee") || lower.includes("execution time"))) {
+    const et = parseETradeCSV(csvText);
+    if (et.length) return { trades: et, broker: "E*TRADE" };
+  }
+  // Robinhood: "activity date" + "trans code" + "instrument"
+  if (lower.includes("activity date") && lower.includes("trans code") && lower.includes("instrument")) {
+    const rh = parseRobinhoodCSV(csvText);
+    if (rh.length) return { trades: rh, broker: "Robinhood" };
+  }
+  // Questrade: "transaction date" + ("gross amount" or "net amount") + "action"
+  if (lower.includes("transaction date") && lower.includes("action") && (lower.includes("gross amount") || lower.includes("net amount"))) {
+    const qt = parseQuestradeCSV(csvText);
+    if (qt.length) return { trades: qt, broker: "Questrade" };
+  }
+  // Alpaca: "side" + "filled_avg_price" or "filled_qty"
+  if (lower.includes("side") && (lower.includes("filled_avg_price") || lower.includes("filled avg price")) && lower.includes("symbol")) {
+    const al = parseAlpacaCSV(csvText);
+    if (al.length) return { trades: al, broker: "Alpaca" };
+  }
+  // Trading212: "ticker" + ("no. of shares" or "no of shares") + "price / share"
+  if (lower.includes("ticker") && (lower.includes("no. of shares") || lower.includes("no of shares")) && (lower.includes("price / share") || lower.includes("price/share"))) {
+    const t212 = parseTrading212CSV(csvText);
+    if (t212.length) return { trades: t212, broker: "Trading212" };
+  }
+  // DEGIRO: "product" + "isin" + ("local value" or "transaction costs")
+  if (lower.includes("product") && lower.includes("isin") && (lower.includes("local value") || lower.includes("transaction costs") || lower.includes("transaction and/or"))) {
+    const dg = parseDEGIROCSV(csvText);
+    if (dg.length) return { trades: dg, broker: "DEGIRO" };
+  }
+  // Zerodha / Upstox: "tradingsymbol" + "trade_type"
+  if ((lower.includes("tradingsymbol") || lower.includes("trading symbol")) && (lower.includes("trade_type") || lower.includes("trade type"))) {
+    const zd = parseZerodhaCSV(csvText);
+    if (zd.length) return { trades: zd, broker: "Zerodha" };
+  }
+  // Vanguard: "trade date" + "transaction type" + ("share price" or "shares")
+  if (lower.includes("trade date") && lower.includes("transaction type") && (lower.includes("share price") || lower.includes("principal amount"))) {
+    const vg = parseVanguardCSV(csvText);
+    if (vg.length) return { trades: vg, broker: "Vanguard" };
+  }
+  // Chase / JP Morgan: "trade date" + "trans type" + "symbol"
+  if (lower.includes("trade date") && lower.includes("trans type") && lower.includes("symbol")) {
+    const ch = parseChaseCSV(csvText);
+    if (ch.length) return { trades: ch, broker: "Chase" };
+  }
+  // WealthSimple: "date" + "transaction" + "symbol" + "quantity"
+  if (lower.includes("transaction") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("transaction date") && !lower.includes("trans code")) {
+    const ws = parseWealthSimpleCSV(csvText);
+    if (ws.length) return { trades: ws, broker: "Wealthsimple" };
+  }
+  // CommSec: "security code" + "brokerage"
+  if (lower.includes("security code") && lower.includes("brokerage")) {
+    const cs = parseCommSecCSV(csvText);
+    if (cs.length) return { trades: cs, broker: "CommSec" };
+  }
+  // Public.com: "side" + "symbol" + "quantity" (no webull-specific cols)
+  if (lower.includes("side") && lower.includes("symbol") && (lower.includes("quantity") || lower.includes("qty")) && !lower.includes("avg price") && !lower.includes("filled qty") && !lower.includes("volume") && !lower.includes("lots") && !lower.includes("filled_avg_price")) {
+    const pub = parsePublicCSV(csvText);
+    if (pub.length) return { trades: pub, broker: "Public" };
   }
   // Fallback: try all parsers
   const fidelity = parseFidelityCSV(csvText);
   if (fidelity.length) return { trades: fidelity, broker: "Fidelity" };
-  for (const [fn, name] of [[parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"], [parseTradovateCSV, "Tradovate"], [parseAMPFuturesCSV, "AMP Futures"], [parseTradeLockerCSV, "TradeLocker"]]) {
+  for (const [fn, name] of [
+    [parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"],
+    [parseTradovateCSV, "Tradovate"], [parseAMPFuturesCSV, "AMP Futures"], [parseTradeLockerCSV, "TradeLocker"],
+    [parseETradeCSV, "E*TRADE"], [parseRobinhoodCSV, "Robinhood"], [parseQuestradeCSV, "Questrade"],
+    [parseAlpacaCSV, "Alpaca"], [parseWealthSimpleCSV, "Wealthsimple"], [parseTrading212CSV, "Trading212"],
+    [parseDEGIROCSV, "DEGIRO"], [parseZerodhaCSV, "Zerodha"], [parseVanguardCSV, "Vanguard"],
+    [parseChaseCSV, "Chase"], [parsePublicCSV, "Public"], [parseCommSecCSV, "CommSec"],
+    [parseGenericBrokerCSV, "Broker"],
+  ]) {
     const result = fn(csvText);
     if (result.length) return { trades: result, broker: name };
   }
@@ -743,7 +1286,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (!processCSV(e.target.result)) alert("Could not parse trades. Supported brokers: Fidelity, Schwab, Interactive Brokers, Webull, Tradovate, AMP Futures, TradeLocker.");
+      if (!processCSV(e.target.result)) alert("Could not parse trades. Supported brokers: Fidelity, Schwab, E*TRADE, Robinhood, Interactive Brokers, Webull, Chase, Vanguard, Wells Fargo, Questrade, Alpaca, Wealthsimple, Trading212, DEGIRO, Public, Zerodha, Upstox, CommSec, Stake, Tradovate, AMP Futures, TradeLocker.");
     };
     reader.readAsText(file);
   }, [processCSV]);
@@ -1019,7 +1562,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                     {brokerLoading ? "Connecting..." : "Connect Broker"}
                   </button>
                   <div style={{ display: "flex", gap: 5, justifyContent: "center", flexWrap: "wrap", marginTop: 16 }}>
-                    {["TD Ameritrade", "Alpaca", "Questrade", "Tradier", "Robinhood", "Wealthsimple", "Interactive Brokers"].map(b => (
+                    {["Fidelity", "Schwab", "E*TRADE", "Robinhood", "IBKR", "Webull", "Chase", "Vanguard", "Wells Fargo", "Questrade", "Alpaca", "Wealthsimple", "Trading212", "DEGIRO", "Public", "Zerodha", "CommSec", "Stake"].map(b => (
                       <span key={b} style={{ padding: "3px 9px", borderRadius: 980, fontSize: 9, fontWeight: 500, background: "rgba(255,255,255,0.04)", color: C.textMuted, border: `0.5px solid ${C.border}` }}>{b}</span>
                     ))}
                   </div>
