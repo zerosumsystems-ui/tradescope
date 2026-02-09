@@ -114,3 +114,61 @@ export async function getSubscription(userId) {
   if (error && error.code !== 'PGRST116') throw error
   return data
 }
+
+// ── Broker Connection (SnapTrade) ──
+async function getAuthToken() {
+  const { data: { session } } = await supabase.auth.getSession()
+  return session?.access_token
+}
+
+export async function connectBroker() {
+  const token = await getAuthToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const res = await fetch('/api/snaptrade-register', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to connect broker')
+  return data
+}
+
+export async function getBrokerStatus() {
+  const token = await getAuthToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const res = await fetch('/api/snaptrade-status', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to get broker status')
+  return data
+}
+
+export async function syncBrokerTrades(startDate, endDate) {
+  const token = await getAuthToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const res = await fetch('/api/snaptrade-sync', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startDate, endDate }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to sync trades')
+  return data
+}
+
+export async function disconnectBroker() {
+  const token = await getAuthToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const res = await fetch('/api/snaptrade-disconnect', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Failed to disconnect broker')
+  return data
+}
