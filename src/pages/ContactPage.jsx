@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Logo from "../components/Logo";
 
 const WEB3FORMS_KEY = "4f4d203e-a4a3-44a4-8d0e-2e47a424d620";
 
@@ -53,6 +54,9 @@ export default function ContactPage() {
       </a>
 
       <div style={{ maxWidth: 480, width: "100%" }}>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <Logo size={48} />
+        </div>
         <h1 style={{
           fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 700,
           letterSpacing: "-0.03em", marginBottom: 8, textAlign: "center",

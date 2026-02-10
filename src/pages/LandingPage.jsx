@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 
 /* ── Scroll-triggered reveal ── */
 function Reveal({ children, delay = 0, style = {} }) {
@@ -108,9 +109,7 @@ export default function LandingPage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
-            </svg>
+            <Logo size={22} />
             <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em" }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
@@ -149,6 +148,11 @@ export default function LandingPage() {
         }} />
 
         <Reveal>
+          <div style={{ marginBottom: 20 }}>
+            <Logo size={80} />
+          </div>
+        </Reveal>
+        <Reveal delay={0.03}>
           <h1 style={{
             fontSize: "clamp(64px, 12vw, 120px)", fontWeight: 700, lineHeight: 1.0,
             letterSpacing: "-0.055em", margin: "0 0 16px",
@@ -531,9 +535,7 @@ export default function LandingPage() {
           flexWrap: "wrap", gap: 8,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#48484a" strokeWidth="2" strokeLinecap="round">
-              <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" /><polyline points="16,7 22,7 22,13" />
-            </svg>
+            <Logo size={14} />
             <span style={{ fontSize: 12, color: "#48484a", fontWeight: 400 }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>

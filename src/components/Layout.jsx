@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import Logo from "./Logo";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" },
@@ -36,10 +37,7 @@ export default function Layout({ user, plan, onSignOut }) {
             style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}
             onClick={() => navigate("/dashboard")}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5f5f7" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="22,7 13.5,15.5 8.5,10.5 2,17" />
-              <polyline points="16,7 22,7 22,13" />
-            </svg>
+            <Logo size={22} />
             <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: "-0.02em" }}>AI Edge</span>
           </div>
 
