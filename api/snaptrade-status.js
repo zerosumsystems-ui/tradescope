@@ -60,6 +60,11 @@ export default async function handler(req, res) {
         }
       }
 
+      // Fall back to the last persisted balance from sync if live data unavailable
+      if (totalBalance == null && conn.total_balance != null) {
+        totalBalance = Number(conn.total_balance);
+      }
+
       return res.status(200).json({
         connected,
         status: connected ? 'connected' : 'registered',

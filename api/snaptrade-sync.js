@@ -368,10 +368,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // Update last sync timestamp
+    // Update last sync timestamp and persist the total balance
+    const updateFields = { last_sync_at: new Date().toISOString(), status: 'connected' };
+    if (totalBalance != null) updateFields.total_balance = totalBalance;
     await supabase
       .from('broker_connections')
-      .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
+      .update(updateFields)
       .eq('user_id', user.id);
 
     // Sum total account balance from SnapTrade account data
