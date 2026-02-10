@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         const { data: loginData } = await snaptrade.authentication.loginSnapTradeUser({
           userId: existing.snaptrade_user_id,
           userSecret: existing.snaptrade_user_secret,
-          connectionType: 'read',
+          connectionType: 'trade-if-available',
           customRedirect: `${req.headers.origin}/dashboard?broker=connected`,
         });
 
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     const { data: loginData } = await snaptrade.authentication.loginSnapTradeUser({
       userId: regData.userId,
       userSecret: regData.userSecret,
-      connectionType: 'read',
+      connectionType: 'trade-if-available',
       customRedirect: `${req.headers.origin}/dashboard?broker=connected`,
     });
 
