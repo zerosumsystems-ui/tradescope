@@ -8,6 +8,7 @@ import JournalPage from './pages/JournalPage'
 import CalculatorPage from './pages/CalculatorPage'
 import InsightsPage from './pages/InsightsPage'
 import PricingPage from './pages/PricingPage'
+import ContactPage from './pages/ContactPage'
 import HeatmapPage from './pages/HeatmapPage'
 import RiskOfRuinPage from './pages/RiskOfRuinPage'
 import { useSubscription } from './hooks/useSubscription'
@@ -239,6 +240,7 @@ export default function App() {
 
       {/* Public routes */}
       <Route path="/pricing" element={<PricingPage session={session} plan={plan} />} />
+      <Route path="/contact" element={<ContactPage />} />
 
       {/* Authenticated routes */}
       <Route element={session ? <Layout user={session.user} plan={plan} onSignOut={handleSignOut} /> : <Navigate to="/login" replace />}>
