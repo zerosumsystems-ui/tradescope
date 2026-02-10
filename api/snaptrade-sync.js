@@ -13,16 +13,47 @@ const supabase = createClient(
 
 // Normalize SnapTrade activity type to BUY or SELL
 function normalizeAction(activity) {
-  const type = (activity.type || '').toUpperCase();
-  const action = (activity.action || '').toUpperCase();
-  const raw = type || action;
+  const type = (activity.type || '').toUpperCase().trim();
+  const optionType = (activity.option_type || '').toUpperCase().trim();
+  const raw = type || optionType;
 
-  if (['BUY', 'BOUGHT', 'PURCHASE', 'BUY_TO_COVER', 'BUY TO COVER'].includes(raw)) return 'BUY';
-  if (['SELL', 'SOLD', 'SELL_SHORT', 'SELL SHORT'].includes(raw)) return 'SELL';
-  // Some brokers report "YOU BOUGHT" / "YOU SOLD"
+  // Direct matches (SnapTrade UniversalActivity known types)
+  const buyTypes = [
+    'BUY', 'BOUGHT', 'PURCHASE',
+    'BUY_TO_COVER', 'BUY TO COVER',
+    'BUY_TO_OPEN', 'BUY_TO_CLOSE',
+    'REI',  // Dividend reinvestment (results in a purchase)
+  ];
+  const sellTypes = [
+    'SELL', 'SOLD',
+    'SELL_SHORT', 'SELL SHORT',
+    'SELL_TO_OPEN', 'SELL_TO_CLOSE',
+  ];
+
+  if (buyTypes.includes(raw)) return 'BUY';
+  if (sellTypes.includes(raw)) return 'SELL';
+
+  // Fuzzy match for broker-specific formats (e.g. "YOU BOUGHT", "MARKET BUY")
   if (raw.includes('BOUGHT') || raw.includes('PURCHASE') || raw.includes('BUY')) return 'BUY';
   if (raw.includes('SOLD') || raw.includes('SELL')) return 'SELL';
+
   return null;
+}
+
+// Track why activities are being filtered out
+function diagnoseDrop(activity) {
+  const type = activity.type || activity.option_type || 'unknown';
+  const symbol = activity.symbol?.symbol || activity.symbol?.raw_symbol || '';
+  const qty = activity.units || 0;
+  const price = activity.price || 0;
+  const dateStr = activity.trade_date || activity.settlement_date || activity.date || '';
+
+  if (!normalizeAction(activity)) return { reason: 'unrecognized_type', type, symbol };
+  if (!symbol && !activity.symbol?.description) return { reason: 'no_symbol', type };
+  if (Number(qty) === 0) return { reason: 'zero_quantity', type, symbol };
+  if (Number(price) === 0) return { reason: 'zero_price', type, symbol };
+  if (!dateStr) return { reason: 'no_date', type, symbol };
+  return { reason: 'parse_error', type, symbol };
 }
 
 // Convert SnapTrade activity to our trade format
@@ -30,17 +61,28 @@ function activityToTrade(activity) {
   const action = normalizeAction(activity);
   if (!action) return null;
 
-  const symbol = activity.symbol?.symbol || activity.symbol?.description || activity.ticker || '';
+  const symbol = activity.symbol?.symbol || activity.symbol?.raw_symbol
+    || activity.symbol?.description || '';
   if (!symbol) return null;
 
-  const qty = Math.abs(activity.units || activity.quantity || 0);
-  const price = activity.price || activity.amount_per_unit || 0;
+  // Explicitly convert to numbers to prevent string coercion issues
+  const qty = Math.abs(Number(activity.units) || 0);
+  const price = Number(activity.price) || 0;
   if (qty === 0 || price === 0) return null;
 
-  // Parse trade date - check multiple possible field names
-  const dateStr = activity.tradeDate || activity.trade_date || activity.settlementDate
-    || activity.settlement_date || activity.date || '';
-  const date = dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';
+  // Parse trade date - SnapTrade uses trade_date and settlement_date (snake_case)
+  const dateStr = activity.trade_date || activity.settlement_date || activity.date || '';
+  let date = '';
+  if (dateStr) {
+    try {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        date = parsed.toISOString().split('T')[0];
+      }
+    } catch {
+      // Invalid date format
+    }
+  }
   if (!date) return null;
 
   return {
@@ -50,8 +92,8 @@ function activityToTrade(activity) {
     action,
     quantity: qty,
     price,
-    commission: Math.abs(activity.commission || 0),
-    fees: Math.abs(activity.fee || activity.fees || 0),
+    commission: 0, // SnapTrade doesn't provide a commission field
+    fees: Math.abs(Number(activity.fee) || 0),
     amount: qty * price,
   };
 }
@@ -94,6 +136,10 @@ export default async function handler(req, res) {
     const startDate = req.body?.startDate || '2020-01-01';
     const endDate = req.body?.endDate || new Date().toISOString().split('T')[0];
 
+    // Diagnostics: track what's being fetched and what's filtered
+    let totalActivitiesFetched = 0;
+    const droppedReasons = {};
+
     for (const account of accounts) {
       try {
         let offset = 0;
@@ -101,7 +147,7 @@ export default async function handler(req, res) {
         let hasMore = true;
 
         while (hasMore) {
-          const { data: activitiesPage } = await snaptrade.accountInformation.getAccountActivities({
+          const response = await snaptrade.accountInformation.getAccountActivities({
             accountId: account.id,
             userId: conn.snaptrade_user_id,
             userSecret: conn.snaptrade_user_secret,
@@ -111,26 +157,49 @@ export default async function handler(req, res) {
             limit,
           });
 
-          const activities = activitiesPage?.activities || activitiesPage || [];
+          // The SDK may return data in different shapes:
+          // - response.data (PaginatedUniversalActivity wrapper)
+          // - response.data.data (nested data array)
+          // - response.data as the array directly
+          const responseData = response?.data;
+          const activities = Array.isArray(responseData)
+            ? responseData
+            : (responseData?.data || responseData?.activities || []);
+
           if (!Array.isArray(activities) || activities.length === 0) {
             hasMore = false;
             break;
           }
 
-          // Log activity types for debugging (helps diagnose broker-specific formats)
+          totalActivitiesFetched += activities.length;
+
+          // Log activity types for debugging
           const typeSummary = {};
           for (const a of activities) {
-            const t = a.type || a.action || 'unknown';
+            const t = a.type || a.option_type || 'unknown';
             typeSummary[t] = (typeSummary[t] || 0) + 1;
           }
-          console.log(`Account ${account.id}: ${activities.length} activities, types:`, typeSummary);
+          console.log(`Account ${account.id}: ${activities.length} activities (offset=${offset}), types:`, typeSummary);
 
           for (const activity of activities) {
             const trade = activityToTrade(activity);
-            if (trade) allTrades.push(trade);
+            if (trade) {
+              allTrades.push(trade);
+            } else {
+              // Track why this activity was dropped
+              const diag = diagnoseDrop(activity);
+              const key = `${diag.reason}:${diag.type || ''}`;
+              droppedReasons[key] = (droppedReasons[key] || 0) + 1;
+            }
           }
 
-          hasMore = activities.length === limit;
+          // Check if there are more pages
+          const totalItems = responseData?.pagination?.total_items;
+          if (totalItems != null) {
+            hasMore = (offset + activities.length) < totalItems;
+          } else {
+            hasMore = activities.length === limit;
+          }
           offset += limit;
         }
       } catch (acctErr) {
@@ -138,14 +207,34 @@ export default async function handler(req, res) {
       }
     }
 
+    // Log diagnostic summary
+    const droppedCount = totalActivitiesFetched - allTrades.length;
+    if (droppedCount > 0) {
+      console.log(`Sync diagnostics: ${totalActivitiesFetched} fetched, ${allTrades.length} recognized as trades, ${droppedCount} filtered out`);
+      console.log('Filtered activity breakdown:', droppedReasons);
+    }
+
     if (allTrades.length === 0) {
-      // Update last sync time even if no trades
       await supabase
         .from('broker_connections')
         .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
         .eq('user_id', user.id);
 
-      return res.status(200).json({ trades: 0, message: 'No buy/sell trades found. Your broker may not have any completed trades, or the activity format may not be recognized. Check the server logs for details.' });
+      // Build a helpful diagnostic message
+      let msg = `No buy/sell trades found in the period ${startDate} to ${endDate}.`;
+      if (totalActivitiesFetched > 0) {
+        msg += ` ${totalActivitiesFetched} activities were fetched but none were recognized as trades.`;
+        const topReasons = Object.entries(droppedReasons)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([key, count]) => `${key} (${count})`)
+          .join(', ');
+        if (topReasons) msg += ` Filtered types: ${topReasons}.`;
+      } else {
+        msg += ' Your broker returned no activities for this date range.';
+      }
+
+      return res.status(200).json({ trades: 0, totalActivities: totalActivitiesFetched, filtered: droppedReasons, message: msg });
     }
 
     // Save trades to DB (upsert to avoid duplicates)
@@ -180,7 +269,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       trades: allTrades.length,
       accounts: accounts.length,
-      message: `Synced ${allTrades.length} trades from ${accounts.length} account(s).`,
+      totalActivities: totalActivitiesFetched,
+      filtered: droppedCount > 0 ? droppedReasons : undefined,
+      dateRange: { startDate, endDate },
+      message: `Synced ${allTrades.length} trades from ${accounts.length} account(s) (${startDate} to ${endDate}).`,
     });
   } catch (err) {
     console.error('SnapTrade sync error:', err);

@@ -1162,6 +1162,8 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [brokerLoading, setBrokerLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
   const [brokerMsg, setBrokerMsg] = useState("");
+  const [syncStartDate, setSyncStartDate] = useState("2020-01-01");
+  const [syncEndDate, setSyncEndDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Persist strategy tags
   useEffect(() => {
@@ -1227,7 +1229,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     setSyncLoading(true);
     setBrokerMsg('');
     try {
-      const result = await db.syncBrokerTrades();
+      const result = await db.syncBrokerTrades(syncStartDate, syncEndDate);
       setBrokerMsg(result.message);
       // Reload trades from DB after sync
       if (result.trades > 0 && user) {
@@ -1252,7 +1254,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       setBrokerMsg(err.message);
     }
     setSyncLoading(false);
-  }, [user]);
+  }, [user, syncStartDate, syncEndDate]);
 
   const handleDisconnectBroker = useCallback(async () => {
     if (!confirm('Disconnect your broker? Your imported trades will be kept.')) return;
@@ -1518,6 +1520,24 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                       Last synced: {new Date(brokerStatus.lastSync).toLocaleString()}
                     </div>
                   )}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: C.textDim, marginBottom: 8 }}>
+                      Sync date range
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input type="date" value={syncStartDate} onChange={e => setSyncStartDate(e.target.value)} style={{
+                        flex: 1, padding: "8px 10px", background: "transparent", border: `0.5px solid ${C.border}`,
+                        borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none",
+                        colorScheme: "dark",
+                      }} />
+                      <span style={{ fontSize: 12, color: C.textDim }}>to</span>
+                      <input type="date" value={syncEndDate} onChange={e => setSyncEndDate(e.target.value)} style={{
+                        flex: 1, padding: "8px 10px", background: "transparent", border: `0.5px solid ${C.border}`,
+                        borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none",
+                        colorScheme: "dark",
+                      }} />
+                    </div>
+                  </div>
                   <div style={{ display: "flex", gap: 10 }}>
                     <button onClick={handleSyncTrades} disabled={syncLoading} style={{
                       flex: 1, padding: "12px 20px", border: "none", borderRadius: 12,
