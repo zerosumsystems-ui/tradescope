@@ -950,10 +950,22 @@ function parseFidelityCSV(csvText) {
   return trades;
 }
 
+// Money market / cash sweep symbols to exclude from trade analysis
+const MONEY_MARKET_SYMBOLS = new Set([
+  'SPAXX', 'FDRXX', 'SPRXX', 'FZFXX', 'FCASH', 'FMPXX',  // Fidelity
+  'SWVXX', 'SNVXX', 'SNAXX',                                // Schwab
+  'VMFXX', 'VMMXX',                                          // Vanguard
+  'ICASH',                                                    // IBKR
+  'WFCXX',                                                    // Wells Fargo
+  'CSHXX',                                                    // Generic cash sweep
+]);
+
 function matchTrades(rawTrades) {
   const buys = {};
   const matched = [];
-  const sorted = [...rawTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const sorted = [...rawTrades]
+    .filter(t => !MONEY_MARKET_SYMBOLS.has(t.symbol?.toUpperCase()))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
   for (const trade of sorted) {
     if (trade.action === "BUY") {
       if (!buys[trade.symbol]) buys[trade.symbol] = [];

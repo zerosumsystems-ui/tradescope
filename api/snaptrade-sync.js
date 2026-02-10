@@ -49,6 +49,7 @@ function diagnoseDrop(activity) {
   const dateStr = activity.trade_date || activity.settlement_date || activity.date || '';
 
   if (!normalizeAction(activity)) return { reason: 'unrecognized_type', type, symbol };
+  if (isMoneyMarket(activity)) return { reason: 'money_market', type, symbol };
   if (!symbol && !activity.symbol?.description) return { reason: 'no_symbol', type };
   if (Number(qty) === 0) return { reason: 'zero_quantity', type, symbol };
   if (Number(price) === 0) return { reason: 'zero_price', type, symbol };
@@ -56,10 +57,34 @@ function diagnoseDrop(activity) {
   return { reason: 'parse_error', type, symbol };
 }
 
+// Money market and cash sweep symbols to exclude — these are not real trades
+const MONEY_MARKET_SYMBOLS = new Set([
+  'SPAXX', 'FDRXX', 'SPRXX', 'FZFXX', 'FCASH', 'FMPXX',  // Fidelity
+  'SWVXX', 'SNVXX', 'SNAXX',                                // Schwab
+  'VMFXX', 'VMMXX',                                          // Vanguard
+  'ICASH', 'BRK CASH',                                       // IBKR
+  'WFCXX',                                                    // Wells Fargo
+  'CSHXX',                                                    // Generic cash sweep
+]);
+
+function isMoneyMarket(activity) {
+  const sym = (activity.symbol?.symbol || activity.symbol?.raw_symbol || '').toUpperCase().split(' ')[0];
+  if (MONEY_MARKET_SYMBOLS.has(sym)) return true;
+  // Check security type from SnapTrade metadata
+  const secType = (activity.symbol?.type || '').toLowerCase();
+  if (secType.includes('money market') || secType.includes('cash')) return true;
+  const desc = (activity.description || activity.symbol?.description || '').toLowerCase();
+  if (desc.includes('money market') || desc.includes('cash sweep')) return true;
+  return false;
+}
+
 // Convert SnapTrade activity to our trade format
 function activityToTrade(activity) {
   const action = normalizeAction(activity);
   if (!action) return null;
+
+  // Filter out money market / cash sweep transactions
+  if (isMoneyMarket(activity)) return null;
 
   const symbol = activity.symbol?.symbol || activity.symbol?.raw_symbol
     || activity.symbol?.description || '';
