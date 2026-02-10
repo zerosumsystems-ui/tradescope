@@ -374,6 +374,15 @@ export default async function handler(req, res) {
       .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
       .eq('user_id', user.id);
 
+    // Sum total account balance from SnapTrade account data
+    let totalBalance = null;
+    for (const a of accounts) {
+      const amt = a.balance?.total?.amount;
+      if (amt != null && !isNaN(Number(amt))) {
+        totalBalance = (totalBalance || 0) + Number(amt);
+      }
+    }
+
     const parts = [`Synced ${allTrades.length} trades`];
     if (allCashEvents.length > 0) parts.push(`${allCashEvents.length} cash events`);
     parts.push(`from ${accounts.length} account(s) (${startDate} to ${endDate})`);
@@ -382,6 +391,7 @@ export default async function handler(req, res) {
       trades: allTrades.length,
       cashEvents: allCashEvents.length,
       accounts: accounts.length,
+      totalBalance,
       totalActivities: totalActivitiesFetched,
       filtered: droppedCount > 0 ? droppedReasons : undefined,
       dateRange: { startDate, endDate },

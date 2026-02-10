@@ -1380,8 +1380,12 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
           symbol: e.symbol || null, description: e.description || '',
         })));
       }
-      // Refresh status
+      // Refresh status (includes totalBalance from SnapTrade)
       const status = await db.getBrokerStatus();
+      // Prefer the balance from the status call, but keep sync result's balance as fallback
+      if (result.totalBalance != null && status.totalBalance == null) {
+        status.totalBalance = result.totalBalance;
+      }
       setBrokerStatus(status);
       setTimeout(() => setBrokerMsg(''), 5000);
     } catch (err) {
@@ -1481,20 +1485,47 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
     });
   }, [matched, dateFilterRange]);
 
-  // When a date filter is active, compute the account size at the start of the period
-  // by rolling through all trades AND cash events (dividends, deposits, withdrawals, interest)
-  // that occurred *before* the filter window. This gives the actual account balance at period start.
+  // When a date filter is active, compute the account balance at the start of the period.
+  // If we have a real balance from SnapTrade, work BACKWARDS: currentBalance - P&L in period - cashEvents in period.
+  // Otherwise fall back to the old forward approach: accountSize + P&L before period + cashEvents before period.
   const computedPeriodStart = useMemo(() => {
-    const { from } = dateFilterRange;
+    const { from, to } = dateFilterRange;
     if (!from || (!matched.length && !cashEvents.length)) return accountSize;
+
+    const realBalance = brokerStatus?.totalBalance;
+    if (realBalance != null) {
+      // Work backwards from the real current balance
+      let inPeriodPnL = 0;
+      for (const t of matched) {
+        const d = new Date(t.sellDate);
+        if (d >= from && (!to || d <= to)) inPeriodPnL += t.pnl;
+      }
+      let inPeriodCash = 0;
+      for (const e of cashEvents) {
+        const d = new Date(e.date);
+        if (d >= from && (!to || d <= to)) inPeriodCash += e.amount;
+      }
+      // Also subtract P&L and cash events AFTER the filter window (if using a bounded range)
+      let afterPeriodPnL = 0;
+      let afterPeriodCash = 0;
+      if (to) {
+        for (const t of matched) {
+          if (new Date(t.sellDate) > to) afterPeriodPnL += t.pnl;
+        }
+        for (const e of cashEvents) {
+          if (new Date(e.date) > to) afterPeriodCash += e.amount;
+        }
+      }
+      return Math.round((realBalance - inPeriodPnL - inPeriodCash - afterPeriodPnL - afterPeriodCash) * 100) / 100;
+    }
+
+    // Fallback: build forward from accountSize + everything before the period
     let running = accountSize;
-    // Sum P&L from matched trades before the period
     const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
     for (const t of sorted) {
       if (new Date(t.sellDate) >= from) break;
       running += t.pnl;
     }
-    // Add cash events (dividends, deposits, withdrawals, interest) before the period
     if (cashEvents.length > 0) {
       const sortedEvents = [...cashEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
       for (const e of sortedEvents) {
@@ -1503,7 +1534,7 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
       }
     }
     return Math.round(running * 100) / 100;
-  }, [matched, cashEvents, dateFilterRange, accountSize]);
+  }, [matched, cashEvents, dateFilterRange, accountSize, brokerStatus]);
 
   const isFiltered = dateFilterRange.from !== null || dateFilterRange.to !== null;
 

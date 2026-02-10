@@ -51,6 +51,15 @@ export default async function handler(req, res) {
           .eq('user_id', user.id);
       }
 
+      // Sum total account balance across all accounts
+      let totalBalance = null;
+      for (const a of (accounts || [])) {
+        const amt = a.balance?.total?.amount;
+        if (amt != null && !isNaN(Number(amt))) {
+          totalBalance = (totalBalance || 0) + Number(amt);
+        }
+      }
+
       return res.status(200).json({
         connected,
         status: connected ? 'connected' : 'registered',
@@ -59,7 +68,9 @@ export default async function handler(req, res) {
           name: a.name,
           number: a.number,
           institution: a.institutionName || a.brokerage?.name || 'Unknown',
+          balance: a.balance?.total?.amount ?? null,
         })),
+        totalBalance,
         lastSync: conn.last_sync_at,
       });
     } catch (snapErr) {
