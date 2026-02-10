@@ -1161,6 +1161,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [dragOver, setDragOver] = useState(false);
   const [riskPct, setRiskPct] = useState(initialSettings?.risk_percent || 1);
   const [accountSize, setAccountSize] = useState(initialSettings?.account_size || 100000);
+  const [accountSizeInput, setAccountSizeInput] = useState(String(initialSettings?.account_size || 100000));
   const [saveStatus, setSaveStatus] = useState("");
   const [strategyTags, setStrategyTags] = useState(() => {
     try { return JSON.parse(localStorage.getItem("aiedge_strategies") || localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
@@ -1318,12 +1319,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     }
   }, [accountSize, riskPct, onSettingsChange]);
 
-  const filteredMatched = useMemo(() => {
-    if (!matched.length) return matched;
+  // Compute the date range filter boundaries (shared between filteredMatched and effectiveStartSize)
+  const dateFilterRange = useMemo(() => {
     const now = new Date();
     let from = null, to = null;
     if (dateFilter === "ytd") {
-      from = new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
+      from = new Date(now.getFullYear(), 0, 1);
     } else if (dateFilter === "12mo") {
       from = new Date(now); from.setFullYear(from.getFullYear() - 1);
     } else if (dateFilter === "3yr") {
@@ -1332,6 +1333,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       if (customDateFrom) from = new Date(customDateFrom);
       if (customDateTo) to = new Date(customDateTo + "T23:59:59");
     }
+    return { from, to };
+  }, [dateFilter, customDateFrom, customDateTo]);
+
+  const filteredMatched = useMemo(() => {
+    if (!matched.length) return matched;
+    const { from, to } = dateFilterRange;
     if (!from && !to) return matched;
     return matched.filter(t => {
       const d = new Date(t.sellDate);
@@ -1339,7 +1346,24 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       if (to && d > to) return false;
       return true;
     });
-  }, [matched, dateFilter, customDateFrom, customDateTo]);
+  }, [matched, dateFilterRange]);
+
+  // When a date filter is active, compute effective account size at the start of the period
+  // by rolling through all trades that occurred *before* the filter window
+  const effectiveStartSize = useMemo(() => {
+    const { from } = dateFilterRange;
+    if (!from || !matched.length) return accountSize;
+    let running = accountSize;
+    const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
+    for (const t of sorted) {
+      if (new Date(t.sellDate) >= from) break;
+      running += t.pnl;
+    }
+    return Math.round(running * 100) / 100;
+  }, [matched, dateFilterRange, accountSize]);
+
+  const isFiltered = dateFilterRange.from !== null || dateFilterRange.to !== null;
+  const effectiveRiskPerTrade = (effectiveStartSize * riskPct) / 100;
 
   const stats = useMemo(() => {
     if (!filteredMatched.length) return null;
@@ -1348,7 +1372,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     const sortedByDate = [...filteredMatched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
 
     // Dynamic R: each trade's 1R is based on the account size at that point
-    let runningAccount = accountSize;
+    let runningAccount = effectiveStartSize;
     const rMultipleMap = new Map();
     const rMultiples = []; // in sortedByDate order
     for (const t of sortedByDate) {
@@ -1451,7 +1475,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       kurtosis: Math.round(kurtosis * 100) / 100,
       finalAccountSize: Math.round(finalAccountSize * 100) / 100,
     };
-  }, [filteredMatched, accountSize, riskPct]);
+  }, [filteredMatched, effectiveStartSize, riskPct]);
 
   // Propagate stats to parent for Insights page
   useEffect(() => {
@@ -1530,7 +1554,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 <div style={{ display: "flex", gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Starting Account Size ($)</label>
-                    <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
+                    <input type="number" value={accountSizeInput} onChange={e => { setAccountSizeInput(e.target.value); const v = Number(e.target.value); if (v > 0) setAccountSize(v); }} onBlur={() => { if (!Number(accountSizeInput)) { setAccountSizeInput(String(accountSize)); } }} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Risk per Trade (%)</label>
@@ -1837,10 +1861,11 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "6px 12px" }}>
             <label style={{ fontSize: 10, color: C.textMuted }}>Start</label>
-            <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            <input type="number" value={accountSizeInput} onChange={e => { setAccountSizeInput(e.target.value); const v = Number(e.target.value); if (v > 0) setAccountSize(v); }} onBlur={() => { if (!Number(accountSizeInput)) { setAccountSizeInput(String(accountSize)); } }} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
             <label style={{ fontSize: 10, color: C.textMuted }}>Risk</label>
             <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 44, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
-            <span style={{ fontSize: 10, color: C.textDim }}>1R=${riskPerTrade.toLocaleString()}</span>
+            <span style={{ fontSize: 10, color: C.textDim }}>1R=${(isFiltered ? effectiveRiskPerTrade : riskPerTrade).toLocaleString()}</span>
+            {isFiltered && effectiveStartSize !== accountSize && <span style={{ fontSize: 10, color: C.cyan }}>Period start ${effectiveStartSize.toLocaleString()}</span>}
             {stats?.finalAccountSize && <span style={{ fontSize: 10, color: C.green }}>Now ${stats.finalAccountSize.toLocaleString()}</span>}
           </div>
           {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow }}>Saving...</span>}
@@ -1877,7 +1902,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <div className="stagger metric-grid-sm" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
               <MetricCard small label="Win Rate" value={`${stats.winRate}%`} color={stats.winRate >= 50 ? C.green : C.red} sub={`${stats.wins}W / ${stats.losses}L`} />
               <MetricCard small label="Total R Earned" value={`${stats.totalR >= 0 ? "+" : ""}${stats.totalR}R`} color={stats.totalR >= 0 ? C.green : C.red} sub={`$${stats.totalPnL.toLocaleString()}`} />
-              <MetricCard small label="Max Drawdown (R)" value={`${stats.maxDDR}R`} color={stats.maxDDR > 5 ? C.red : C.yellow} sub={`$${Math.round(stats.maxDDR * riskPerTrade).toLocaleString()}`} />
+              <MetricCard small label="Max Drawdown (R)" value={`${stats.maxDDR}R`} color={stats.maxDDR > 5 ? C.red : C.yellow} sub={`$${Math.round(stats.maxDDR * (isFiltered ? effectiveRiskPerTrade : riskPerTrade)).toLocaleString()}`} />
               <MetricCard small label="Std Dev of R" value={`${stats.stdR}R`} color={C.text} sub="Consistency" />
               <MetricCard small label="Median R" value={`${stats.medianR >= 0 ? "+" : ""}${stats.medianR}R`} color={stats.medianR >= 0 ? C.green : C.red} sub="Middle trade result" />
               <MetricCard small label="R Skewness" value={stats.skewness.toFixed(2)} color={stats.skewness > 0 ? C.green : C.red} sub={stats.skewness > 0 ? "Right-skewed (good)" : "Left-skewed"} />
@@ -2000,7 +2025,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: "'Inter', -apple-system, sans-serif" }}>
-                  {filteredTrades.length} {filterStrategy ? "filtered" : "closed"} trades · 1R = ${riskPerTrade.toLocaleString()}
+                  {filteredTrades.length} {filterStrategy ? "filtered" : "closed"} trades · 1R = ${(isFiltered ? effectiveRiskPerTrade : riskPerTrade).toLocaleString()}
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <label style={{ fontSize: 10, color: C.textMuted, fontFamily: "'Inter', -apple-system, sans-serif" }}>Strategy:</label>
