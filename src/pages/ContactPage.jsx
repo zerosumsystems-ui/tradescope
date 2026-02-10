@@ -1,16 +1,37 @@
 import { useState } from "react";
 
+const WEB3FORMS_KEY = "4f4d203e-a4a3-44a4-8d0e-2e47a424d620";
+
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState(""); // "", "sending", "sent", "error"
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // mailto fallback — opens user's email client
-    const subject = encodeURIComponent(`Contact from ${form.name}`);
-    const body = encodeURIComponent(`From: ${form.name} (${form.email})\n\n${form.message}`);
-    window.location.href = `mailto:support@aiedge.trade?subject=${subject}&body=${body}`;
-    setSent(true);
+    setStatus("sending");
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject: `Contact from ${form.name} — AI Edge`,
+          from_name: form.name,
+          name: form.name,
+          email: form.email,
+          message: form.message,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus("sent");
+        setForm({ name: "", email: "", message: "" });
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
   };
 
   return (
@@ -43,21 +64,22 @@ export default function ContactPage() {
           Have a question or need help? We'd love to hear from you.
         </p>
 
-        {sent ? (
+        {status === "sent" ? (
           <div style={{
             background: "#111", borderRadius: 16,
             border: "0.5px solid rgba(255,255,255,0.06)",
             padding: 40, textAlign: "center",
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>&#10003;</div>
-            <p style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Message ready</p>
+            <div style={{ fontSize: 32, marginBottom: 12, color: "#34c759" }}>&#10003;</div>
+            <p style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Message sent!</p>
             <p style={{ fontSize: 14, color: "#86868b" }}>
-              Your email client should open with the message. If it didn't,
-              email us directly at{" "}
-              <a href="mailto:support@aiedge.trade" style={{ color: "#2997ff", textDecoration: "none" }}>
-                support@aiedge.trade
-              </a>
+              We'll get back to you as soon as possible.
             </p>
+            <button onClick={() => setStatus("")} style={{
+              marginTop: 20, padding: "10px 20px", fontSize: 14, fontWeight: 500,
+              background: "rgba(255,255,255,0.06)", color: "#a1a1a6", border: "none",
+              borderRadius: 980, cursor: "pointer", fontFamily: "inherit",
+            }}>Send another message</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -100,15 +122,19 @@ export default function ContactPage() {
                 }}
               />
             </div>
-            <button type="submit" style={{
+            {status === "error" && (
+              <p style={{ fontSize: 13, color: "#ff3b30" }}>Something went wrong. Please try again.</p>
+            )}
+            <button type="submit" disabled={status === "sending"} style={{
               padding: "14px 24px", fontSize: 15, fontWeight: 600,
-              background: "#2997ff", color: "#fff", border: "none",
-              borderRadius: 980, cursor: "pointer", fontFamily: "inherit",
-              marginTop: 8, transition: "opacity 0.2s",
+              background: status === "sending" ? "#1a6ecc" : "#2997ff",
+              color: "#fff", border: "none",
+              borderRadius: 980, cursor: status === "sending" ? "default" : "pointer",
+              fontFamily: "inherit", marginTop: 8, transition: "opacity 0.2s",
             }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+              onMouseEnter={e => { if (status !== "sending") e.currentTarget.style.opacity = "0.85"; }}
               onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >Send Message</button>
+            >{status === "sending" ? "Sending..." : "Send Message"}</button>
           </form>
         )}
 
