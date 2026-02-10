@@ -106,6 +106,29 @@ export default function Layout({ user, plan, onSignOut }) {
 
       {/* ── Page Content ── */}
       <Outlet />
+
+      {/* ── Footer ── */}
+      <footer style={{
+        borderTop: "0.5px solid rgba(255,255,255,0.04)",
+        padding: "16px 24px", maxWidth: 1320, margin: "0 auto",
+      }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 24 }}>
+          <a href="/contact" style={{
+            fontSize: 12, color: "#48484a", textDecoration: "none",
+            fontFamily: "inherit", fontWeight: 400, transition: "color 0.2s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = "#86868b"}
+            onMouseLeave={e => e.currentTarget.style.color = "#48484a"}
+          >Contact Us</a>
+          <a href="/pricing" style={{
+            fontSize: 12, color: "#48484a", textDecoration: "none",
+            fontFamily: "inherit", fontWeight: 400, transition: "color 0.2s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = "#86868b"}
+            onMouseLeave={e => e.currentTarget.style.color = "#48484a"}
+          >Pricing</a>
+        </div>
+      </footer>
     </div>
   );
 }

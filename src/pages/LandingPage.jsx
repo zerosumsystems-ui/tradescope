@@ -537,6 +537,14 @@ export default function LandingPage() {
             <span style={{ fontSize: 12, color: "#48484a", fontWeight: 400 }}>AI Edge</span>
           </div>
           <div style={{ display: "flex", gap: 24 }}>
+            <button onClick={() => navigate("/contact")} style={{
+              background: "none", border: "none", fontSize: 12, color: "#48484a",
+              cursor: "pointer", fontFamily: "inherit", fontWeight: 400, padding: 0,
+              transition: "color 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.color = "#86868b"}
+              onMouseLeave={e => e.currentTarget.style.color = "#48484a"}
+            >Contact</button>
             <button onClick={() => navigate("/pricing")} style={{
               background: "none", border: "none", fontSize: 12, color: "#48484a",
               cursor: "pointer", fontFamily: "inherit", fontWeight: 400, padding: 0,
