@@ -31,15 +31,34 @@ export default async function handler(req, res) {
       .single();
 
     if (existing?.snaptrade_user_secret) {
-      // Already registered — generate login redirect
-      const { data: loginData } = await snaptrade.authentication.loginSnapTradeUser({
-        userId: existing.snaptrade_user_id,
-        userSecret: existing.snaptrade_user_secret,
-        connectionType: 'read',
-        customRedirect: `${req.headers.origin}/dashboard?broker=connected`,
-      });
+      // Already registered — try to generate login redirect
+      try {
+        const { data: loginData } = await snaptrade.authentication.loginSnapTradeUser({
+          userId: existing.snaptrade_user_id,
+          userSecret: existing.snaptrade_user_secret,
+          connectionType: 'read',
+          customRedirect: `${req.headers.origin}/dashboard?broker=connected`,
+        });
 
-      return res.status(200).json({ redirectURI: loginData.redirectURI });
+        return res.status(200).json({ redirectURI: loginData.redirectURI });
+      } catch (loginErr) {
+        // If signature verification fails (e.g. API key was rotated), re-register the user
+        const status = loginErr.response?.status || loginErr.status;
+        if (status === 401 || status === 403) {
+          console.warn('SnapTrade login failed (likely API key rotation), re-registering user:', loginErr.message);
+          // Delete old SnapTrade user (best-effort)
+          try {
+            await snaptrade.authentication.deleteSnapTradeUser({ userId: existing.snaptrade_user_id });
+          } catch (_) { /* ignore — old user may already be invalid */ }
+          // Remove stale DB record so re-registration below proceeds
+          await supabase
+            .from('broker_connections')
+            .delete()
+            .eq('user_id', user.id);
+        } else {
+          throw loginErr;
+        }
+      }
     }
 
     // Register new SnapTrade user
