@@ -11,20 +11,35 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Normalize SnapTrade activity type to BUY or SELL
+function normalizeAction(activity) {
+  const type = (activity.type || '').toUpperCase();
+  const action = (activity.action || '').toUpperCase();
+  const raw = type || action;
+
+  if (['BUY', 'BOUGHT', 'PURCHASE', 'BUY_TO_COVER', 'BUY TO COVER'].includes(raw)) return 'BUY';
+  if (['SELL', 'SOLD', 'SELL_SHORT', 'SELL SHORT'].includes(raw)) return 'SELL';
+  // Some brokers report "YOU BOUGHT" / "YOU SOLD"
+  if (raw.includes('BOUGHT') || raw.includes('PURCHASE') || raw.includes('BUY')) return 'BUY';
+  if (raw.includes('SOLD') || raw.includes('SELL')) return 'SELL';
+  return null;
+}
+
 // Convert SnapTrade activity to our trade format
 function activityToTrade(activity) {
-  const type = (activity.type || '').toUpperCase();
-  if (type !== 'BUY' && type !== 'SELL') return null;
+  const action = normalizeAction(activity);
+  if (!action) return null;
 
-  const symbol = activity.symbol?.symbol || activity.symbol?.description || '';
+  const symbol = activity.symbol?.symbol || activity.symbol?.description || activity.ticker || '';
   if (!symbol) return null;
 
   const qty = Math.abs(activity.units || activity.quantity || 0);
-  const price = activity.price || 0;
+  const price = activity.price || activity.amount_per_unit || 0;
   if (qty === 0 || price === 0) return null;
 
-  // Parse trade date
-  const dateStr = activity.tradeDate || activity.trade_date || activity.settlementDate || '';
+  // Parse trade date - check multiple possible field names
+  const dateStr = activity.tradeDate || activity.trade_date || activity.settlementDate
+    || activity.settlement_date || activity.date || '';
   const date = dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';
   if (!date) return null;
 
@@ -32,7 +47,7 @@ function activityToTrade(activity) {
     date,
     symbol: symbol.split(' ')[0].toUpperCase(),
     description: activity.description || activity.symbol?.description || '',
-    action: type,
+    action,
     quantity: qty,
     price,
     commission: Math.abs(activity.commission || 0),
@@ -92,7 +107,6 @@ export default async function handler(req, res) {
             userSecret: conn.snaptrade_user_secret,
             startDate,
             endDate,
-            type: 'BUY,SELL',
             offset,
             limit,
           });
@@ -102,6 +116,14 @@ export default async function handler(req, res) {
             hasMore = false;
             break;
           }
+
+          // Log activity types for debugging (helps diagnose broker-specific formats)
+          const typeSummary = {};
+          for (const a of activities) {
+            const t = a.type || a.action || 'unknown';
+            typeSummary[t] = (typeSummary[t] || 0) + 1;
+          }
+          console.log(`Account ${account.id}: ${activities.length} activities, types:`, typeSummary);
 
           for (const activity of activities) {
             const trade = activityToTrade(activity);
@@ -123,7 +145,7 @@ export default async function handler(req, res) {
         .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
         .eq('user_id', user.id);
 
-      return res.status(200).json({ trades: 0, message: 'No buy/sell trades found in the selected date range.' });
+      return res.status(200).json({ trades: 0, message: 'No buy/sell trades found. Your broker may not have any completed trades, or the activity format may not be recognized. Check the server logs for details.' });
     }
 
     // Save trades to DB (upsert to avoid duplicates)
