@@ -795,120 +795,226 @@ function parseGenericBrokerCSV(csvText) {
   return trades;
 }
 
+// ── Cash event parsers: extract dividends, deposits, withdrawals, interest from broker CSVs ──
+
+function parseFidelityCashEvents(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("run date") && l.includes("action")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$]/g, ""));
+  const events = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(",");
+    if (vals.length < 6) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || "").trim(); });
+    const action = (row["action"] || "").toUpperCase();
+    const amount = parseFloat((row["amount"] || row["amount "] || "0").replace(/[,$]/g, "")) || 0;
+    if (amount === 0) continue;
+    // Skip buy/sell — those are already handled as trades
+    if (action.includes("BOUGHT") || action.includes("SOLD")) continue;
+    let type = null;
+    if (action.includes("DIVIDEND") || action.includes("REINVESTMENT")) type = "DIVIDEND";
+    else if (action.includes("INTEREST")) type = "INTEREST";
+    else if (action.includes("DIRECT DEPOSIT") || action.includes("TRANSFERRED FROM") || action.includes("ELECTRONIC FUNDS TRANSFER RECEIVED")) type = "DEPOSIT";
+    else if (action.includes("TRANSFERRED TO") || action.includes("DISTRIBUTION")) type = "WITHDRAWAL";
+    if (!type) continue;
+    events.push({
+      date: row["run date"] || row["date"] || "",
+      type,
+      amount,
+      symbol: row["symbol"] || null,
+      description: row["security description"] || row["action"] || "",
+    });
+  }
+  return events;
+}
+
+function parseSchwabCashEvents(csvText) {
+  const lines = csvText.trim().split("\n");
+  let headerIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].toLowerCase();
+    if (l.includes("date") && l.includes("action") && l.includes("amount")) { headerIdx = i; break; }
+  }
+  if (headerIdx === -1) return [];
+  const headers = lines[headerIdx].split(",").map(h => h.trim().toLowerCase().replace(/[()$]/g, ""));
+  const events = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith("Transactions Total")) continue;
+    const vals = line.split(",");
+    if (vals.length < 3) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = (vals[idx] || "").trim(); });
+    const action = (row["action"] || "").toUpperCase();
+    const amount = parseFloat((row["amount"] || "0").replace(/[,$]/g, "")) || 0;
+    if (amount === 0) continue;
+    // Skip buy/sell
+    if (action.includes("BUY") || action.includes("SELL")) continue;
+    let type = null;
+    if (action.includes("DIVIDEND") || action.includes("REINVEST")) type = "DIVIDEND";
+    else if (action.includes("INTEREST")) type = "INTEREST";
+    else if (action.includes("WIRE FUNDS REC") || action.includes("MONEYLINK TRANSFER") || action.includes("FUNDS RECEIVED") || action.includes("CASH IN LIEU")) type = "DEPOSIT";
+    else if (action.includes("WIRE FUNDS") || action.includes("FUNDS DISBURSED")) type = "WITHDRAWAL";
+    else if (action.includes("JOURNAL")) type = "TRANSFER";
+    if (!type) continue;
+    events.push({
+      date: row["date"] || "",
+      type,
+      amount,
+      symbol: (row["symbol"] || "").replace(/\s+/g, "") || null,
+      description: row["description"] || row["action"] || "",
+    });
+  }
+  return events;
+}
+
+// Map of broker names to their cash event parser (only brokers with dedicated cash parsers)
+const CASH_EVENT_PARSERS = {
+  "Fidelity": parseFidelityCashEvents,
+  "Schwab": parseSchwabCashEvents,
+};
+
 function parseCSVAuto(csvText) {
   const lower = csvText.toLowerCase();
+  let result = null;
+
   // Fidelity: "Run Date" + "YOU BOUGHT"
-  if (lower.includes("run date") && lower.includes("you bought")) return { trades: parseFidelityCSV(csvText), broker: "Fidelity" };
+  if (lower.includes("run date") && (lower.includes("you bought") || lower.includes("you sold"))) {
+    result = { trades: parseFidelityCSV(csvText), broker: "Fidelity" };
+  }
   // IBKR: "Trades" + "Header" or "Date/Time" + "T. Price"
-  if ((lower.includes("trades") && lower.includes("header")) || (lower.includes("date/time") && lower.includes("t. price"))) return { trades: parseIBKRCSV(csvText), broker: "Interactive Brokers" };
+  else if ((lower.includes("trades") && lower.includes("header")) || (lower.includes("date/time") && lower.includes("t. price"))) {
+    result = { trades: parseIBKRCSV(csvText), broker: "Interactive Brokers" };
+  }
   // Tradovate: "B/S" + "Contract" + "Product" (futures-specific columns)
-  if (lower.includes("b/s") && lower.includes("contract") && lower.includes("product")) {
+  else if (lower.includes("b/s") && lower.includes("contract") && lower.includes("product")) {
     const tv = parseTradovateCSV(csvText);
-    if (tv.length) return { trades: tv, broker: "Tradovate" };
+    if (tv.length) result = { trades: tv, broker: "Tradovate" };
   }
   // AMP/CQG: "B/S" + "Avg Fill P" (CQG Desktop format)
-  if (lower.includes("b/s") && lower.includes("avg fill p")) {
+  if (!result && lower.includes("b/s") && lower.includes("avg fill p")) {
     const amp = parseAMPFuturesCSV(csvText);
-    if (amp.length) return { trades: amp, broker: "AMP Futures" };
+    if (amp.length) result = { trades: amp, broker: "AMP Futures" };
   }
   // AMP/Rithmic: "Buy/Sell" + "Qty Filled" + "Avg Fill Price"
-  if (lower.includes("buy/sell") && lower.includes("qty filled") && lower.includes("avg fill price")) {
+  if (!result && lower.includes("buy/sell") && lower.includes("qty filled") && lower.includes("avg fill price")) {
     const amp = parseAMPFuturesCSV(csvText);
-    if (amp.length) return { trades: amp, broker: "AMP Futures" };
+    if (amp.length) result = { trades: amp, broker: "AMP Futures" };
   }
   // TradeLocker: "side" + "open price" + "close price" (closed positions)
-  if (lower.includes("side") && lower.includes("open price") && lower.includes("close price")) {
+  if (!result && lower.includes("side") && lower.includes("open price") && lower.includes("close price")) {
     const tl = parseTradeLockerCSV(csvText);
-    if (tl.length) return { trades: tl, broker: "TradeLocker" };
+    if (tl.length) result = { trades: tl, broker: "TradeLocker" };
   }
   // TradeLocker: individual fills with "side" + "symbol" + ("volume" or "lots")
-  if (lower.includes("side") && lower.includes("symbol") && (lower.includes("volume") || lower.includes("lots")) && !lower.includes("filled qty")) {
+  if (!result && lower.includes("side") && lower.includes("symbol") && (lower.includes("volume") || lower.includes("lots")) && !lower.includes("filled qty")) {
     const tl = parseTradeLockerCSV(csvText);
-    if (tl.length) return { trades: tl, broker: "TradeLocker" };
+    if (tl.length) result = { trades: tl, broker: "TradeLocker" };
   }
   // Webull: "side" + "avg price" or "filled qty"
-  if ((lower.includes("side") && lower.includes("avg price")) || (lower.includes("filled qty"))) return { trades: parseWebullCSV(csvText), broker: "Webull" };
+  if (!result && ((lower.includes("side") && lower.includes("avg price")) || (lower.includes("filled qty")))) {
+    result = { trades: parseWebullCSV(csvText), broker: "Webull" };
+  }
   // Schwab: "action" + "symbol" + "quantity" (no "Run Date")
-  if (lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date") && !lower.includes("ticker") && !lower.includes("isin")) {
+  if (!result && lower.includes("action") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("run date") && !lower.includes("ticker") && !lower.includes("isin")) {
     const schwab = parseSchwabCSV(csvText);
-    if (schwab.length) return { trades: schwab, broker: "Schwab" };
+    if (schwab.length) result = { trades: schwab, broker: "Schwab" };
   }
   // E*TRADE: "execution time" or "est. comm" or "est. fee"
-  if (lower.includes("symbol") && (lower.includes("est. comm") || lower.includes("est. fee") || lower.includes("execution time"))) {
+  if (!result && lower.includes("symbol") && (lower.includes("est. comm") || lower.includes("est. fee") || lower.includes("execution time"))) {
     const et = parseETradeCSV(csvText);
-    if (et.length) return { trades: et, broker: "E*TRADE" };
+    if (et.length) result = { trades: et, broker: "E*TRADE" };
   }
   // Robinhood: "activity date" + "trans code" + "instrument"
-  if (lower.includes("activity date") && lower.includes("trans code") && lower.includes("instrument")) {
+  if (!result && lower.includes("activity date") && lower.includes("trans code") && lower.includes("instrument")) {
     const rh = parseRobinhoodCSV(csvText);
-    if (rh.length) return { trades: rh, broker: "Robinhood" };
+    if (rh.length) result = { trades: rh, broker: "Robinhood" };
   }
   // Questrade: "transaction date" + ("gross amount" or "net amount") + "action"
-  if (lower.includes("transaction date") && lower.includes("action") && (lower.includes("gross amount") || lower.includes("net amount"))) {
+  if (!result && lower.includes("transaction date") && lower.includes("action") && (lower.includes("gross amount") || lower.includes("net amount"))) {
     const qt = parseQuestradeCSV(csvText);
-    if (qt.length) return { trades: qt, broker: "Questrade" };
+    if (qt.length) result = { trades: qt, broker: "Questrade" };
   }
   // Alpaca: "side" + "filled_avg_price" or "filled_qty"
-  if (lower.includes("side") && (lower.includes("filled_avg_price") || lower.includes("filled avg price")) && lower.includes("symbol")) {
+  if (!result && lower.includes("side") && (lower.includes("filled_avg_price") || lower.includes("filled avg price")) && lower.includes("symbol")) {
     const al = parseAlpacaCSV(csvText);
-    if (al.length) return { trades: al, broker: "Alpaca" };
+    if (al.length) result = { trades: al, broker: "Alpaca" };
   }
   // Trading212: "ticker" + ("no. of shares" or "no of shares") + "price / share"
-  if (lower.includes("ticker") && (lower.includes("no. of shares") || lower.includes("no of shares")) && (lower.includes("price / share") || lower.includes("price/share"))) {
+  if (!result && lower.includes("ticker") && (lower.includes("no. of shares") || lower.includes("no of shares")) && (lower.includes("price / share") || lower.includes("price/share"))) {
     const t212 = parseTrading212CSV(csvText);
-    if (t212.length) return { trades: t212, broker: "Trading212" };
+    if (t212.length) result = { trades: t212, broker: "Trading212" };
   }
   // DEGIRO: "product" + "isin" + ("local value" or "transaction costs")
-  if (lower.includes("product") && lower.includes("isin") && (lower.includes("local value") || lower.includes("transaction costs") || lower.includes("transaction and/or"))) {
+  if (!result && lower.includes("product") && lower.includes("isin") && (lower.includes("local value") || lower.includes("transaction costs") || lower.includes("transaction and/or"))) {
     const dg = parseDEGIROCSV(csvText);
-    if (dg.length) return { trades: dg, broker: "DEGIRO" };
+    if (dg.length) result = { trades: dg, broker: "DEGIRO" };
   }
   // Zerodha / Upstox: "tradingsymbol" + "trade_type"
-  if ((lower.includes("tradingsymbol") || lower.includes("trading symbol")) && (lower.includes("trade_type") || lower.includes("trade type"))) {
+  if (!result && ((lower.includes("tradingsymbol") || lower.includes("trading symbol")) && (lower.includes("trade_type") || lower.includes("trade type")))) {
     const zd = parseZerodhaCSV(csvText);
-    if (zd.length) return { trades: zd, broker: "Zerodha" };
+    if (zd.length) result = { trades: zd, broker: "Zerodha" };
   }
   // Vanguard: "trade date" + "transaction type" + ("share price" or "shares")
-  if (lower.includes("trade date") && lower.includes("transaction type") && (lower.includes("share price") || lower.includes("principal amount"))) {
+  if (!result && lower.includes("trade date") && lower.includes("transaction type") && (lower.includes("share price") || lower.includes("principal amount"))) {
     const vg = parseVanguardCSV(csvText);
-    if (vg.length) return { trades: vg, broker: "Vanguard" };
+    if (vg.length) result = { trades: vg, broker: "Vanguard" };
   }
   // Chase / JP Morgan: "trade date" + "trans type" + "symbol"
-  if (lower.includes("trade date") && lower.includes("trans type") && lower.includes("symbol")) {
+  if (!result && lower.includes("trade date") && lower.includes("trans type") && lower.includes("symbol")) {
     const ch = parseChaseCSV(csvText);
-    if (ch.length) return { trades: ch, broker: "Chase" };
+    if (ch.length) result = { trades: ch, broker: "Chase" };
   }
   // WealthSimple: "date" + "transaction" + "symbol" + "quantity"
-  if (lower.includes("transaction") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("transaction date") && !lower.includes("trans code")) {
+  if (!result && lower.includes("transaction") && lower.includes("symbol") && lower.includes("quantity") && !lower.includes("transaction date") && !lower.includes("trans code")) {
     const ws = parseWealthSimpleCSV(csvText);
-    if (ws.length) return { trades: ws, broker: "Wealthsimple" };
+    if (ws.length) result = { trades: ws, broker: "Wealthsimple" };
   }
   // CommSec: "security code" + "brokerage"
-  if (lower.includes("security code") && lower.includes("brokerage")) {
+  if (!result && lower.includes("security code") && lower.includes("brokerage")) {
     const cs = parseCommSecCSV(csvText);
-    if (cs.length) return { trades: cs, broker: "CommSec" };
+    if (cs.length) result = { trades: cs, broker: "CommSec" };
   }
   // Public.com: "side" + "symbol" + "quantity" (no webull-specific cols)
-  if (lower.includes("side") && lower.includes("symbol") && (lower.includes("quantity") || lower.includes("qty")) && !lower.includes("avg price") && !lower.includes("filled qty") && !lower.includes("volume") && !lower.includes("lots") && !lower.includes("filled_avg_price")) {
+  if (!result && lower.includes("side") && lower.includes("symbol") && (lower.includes("quantity") || lower.includes("qty")) && !lower.includes("avg price") && !lower.includes("filled qty") && !lower.includes("volume") && !lower.includes("lots") && !lower.includes("filled_avg_price")) {
     const pub = parsePublicCSV(csvText);
-    if (pub.length) return { trades: pub, broker: "Public" };
+    if (pub.length) result = { trades: pub, broker: "Public" };
   }
+
   // Fallback: try all parsers
-  const fidelity = parseFidelityCSV(csvText);
-  if (fidelity.length) return { trades: fidelity, broker: "Fidelity" };
-  for (const [fn, name] of [
-    [parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"],
-    [parseTradovateCSV, "Tradovate"], [parseAMPFuturesCSV, "AMP Futures"], [parseTradeLockerCSV, "TradeLocker"],
-    [parseETradeCSV, "E*TRADE"], [parseRobinhoodCSV, "Robinhood"], [parseQuestradeCSV, "Questrade"],
-    [parseAlpacaCSV, "Alpaca"], [parseWealthSimpleCSV, "Wealthsimple"], [parseTrading212CSV, "Trading212"],
-    [parseDEGIROCSV, "DEGIRO"], [parseZerodhaCSV, "Zerodha"], [parseVanguardCSV, "Vanguard"],
-    [parseChaseCSV, "Chase"], [parsePublicCSV, "Public"], [parseCommSecCSV, "CommSec"],
-    [parseGenericBrokerCSV, "Broker"],
-  ]) {
-    const result = fn(csvText);
-    if (result.length) return { trades: result, broker: name };
+  if (!result) {
+    const fidelity = parseFidelityCSV(csvText);
+    if (fidelity.length) { result = { trades: fidelity, broker: "Fidelity" }; }
+    else {
+      for (const [fn, name] of [
+        [parseSchwabCSV, "Schwab"], [parseIBKRCSV, "IBKR"], [parseWebullCSV, "Webull"],
+        [parseTradovateCSV, "Tradovate"], [parseAMPFuturesCSV, "AMP Futures"], [parseTradeLockerCSV, "TradeLocker"],
+        [parseETradeCSV, "E*TRADE"], [parseRobinhoodCSV, "Robinhood"], [parseQuestradeCSV, "Questrade"],
+        [parseAlpacaCSV, "Alpaca"], [parseWealthSimpleCSV, "Wealthsimple"], [parseTrading212CSV, "Trading212"],
+        [parseDEGIROCSV, "DEGIRO"], [parseZerodhaCSV, "Zerodha"], [parseVanguardCSV, "Vanguard"],
+        [parseChaseCSV, "Chase"], [parsePublicCSV, "Public"], [parseCommSecCSV, "CommSec"],
+        [parseGenericBrokerCSV, "Broker"],
+      ]) {
+        const r = fn(csvText);
+        if (r.length) { result = { trades: r, broker: name }; break; }
+      }
+    }
   }
-  return { trades: [], broker: "Unknown" };
+
+  if (!result) return { trades: [], cashEvents: [], broker: "Unknown" };
+
+  // Parse cash events if we have a dedicated parser for this broker
+  const cashParser = CASH_EVENT_PARSERS[result.broker];
+  result.cashEvents = cashParser ? cashParser(csvText) : [];
+  return result;
 }
 
 function parseFidelityCSV(csvText) {
@@ -1154,9 +1260,10 @@ function TradeTableComponent({ trades, strategyTags, onSetStrategy }) {
 
 const STRATEGY_OPTIONS = ["Breakout", "Mean Reversion", "Momentum", "Earnings Play", "Swing Trade", "Scalp", "Gap Fill", "Trend Follow", "Reversal", "Other"];
 
-export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrades, onSettingsChange, initialSettings, user, onSignOut, onStatsChange }) {
+export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTrades, onClearTrades, onSettingsChange, initialSettings, user, onSignOut, onStatsChange }) {
   const [loaded, setLoaded] = useState(false);
   const [matched, setMatched] = useState([]);
+  const [cashEvents, setCashEvents] = useState([]);
   const [activeTab, setActiveTab] = useState("tharp");
   const [dragOver, setDragOver] = useState(false);
   const [riskPct, setRiskPct] = useState(initialSettings?.risk_percent || 1);
@@ -1191,7 +1298,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     setStrategyTags(prev => ({ ...prev, [tradeKey]: strategy }));
   }, []);
 
-  // Load saved trades from DB on mount
+  // Load saved trades and cash events from DB on mount
   useEffect(() => {
     if (savedTrades && savedTrades.length > 0) {
       const m = matchTrades(savedTrades);
@@ -1199,6 +1306,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         setMatched(m);
         setLoaded(true);
       }
+    }
+    if (savedCashEvents && savedCashEvents.length > 0) {
+      setCashEvents(savedCashEvents);
     }
   }, []);
 
@@ -1248,9 +1358,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     try {
       const result = await db.syncBrokerTrades(syncStartDate, syncEndDate);
       setBrokerMsg(result.message);
-      // Reload trades from DB after sync
-      if (result.trades > 0 && user) {
-        const trades = await db.loadTrades(user.id);
+      // Reload trades and cash events from DB after sync
+      if ((result.trades > 0 || result.cashEvents > 0) && user) {
+        const [trades, loadedCashEvents] = await Promise.all([
+          db.loadTrades(user.id),
+          db.loadCashEvents(user.id),
+        ]);
         const formatted = trades.map(t => ({
           date: t.date, symbol: t.symbol, description: t.description,
           action: t.action, quantity: Number(t.quantity), price: Number(t.price),
@@ -1262,6 +1375,10 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           setLoaded(true);
           setDetectedBroker("SnapTrade");
         }
+        setCashEvents(loadedCashEvents.map(e => ({
+          date: e.date, type: e.type, amount: Number(e.amount),
+          symbol: e.symbol || null, description: e.description || '',
+        })));
       }
       // Refresh status
       const status = await db.getBrokerStatus();
@@ -1286,20 +1403,35 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   }, []);
 
   const processCSV = useCallback((text) => {
-    const { trades: parsed, broker } = parseCSVAuto(text);
+    const { trades: parsed, cashEvents: parsedCashEvents, broker } = parseCSVAuto(text);
     if (!parsed.length) return false;
     setDetectedBroker(broker);
     const m = matchTrades(parsed);
     if (!m.length) return false;
     setMatched(m);
     setLoaded(true);
+    // Save cash events (dividends, deposits, withdrawals, interest) to DB
+    if (parsedCashEvents && parsedCashEvents.length > 0) {
+      setCashEvents(prev => {
+        const existing = new Set(prev.map(e => `${e.date}_${e.type}_${e.amount}_${e.symbol || ''}`));
+        const merged = [...prev];
+        for (const e of parsedCashEvents) {
+          const key = `${e.date}_${e.type}_${e.amount}_${e.symbol || ''}`;
+          if (!existing.has(key)) { merged.push(e); existing.add(key); }
+        }
+        return merged;
+      });
+      if (user) {
+        db.saveCashEvents(user.id, parsedCashEvents).catch(err => console.error('Failed to save cash events:', err));
+      }
+    }
     if (onSaveTrades) {
       setSaveStatus("saving");
       onSaveTrades(parsed).then(() => setSaveStatus("saved")).catch(() => setSaveStatus("error"));
       setTimeout(() => setSaveStatus(""), 2500);
     }
     return true;
-  }, [onSaveTrades]);
+  }, [onSaveTrades, user]);
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -1350,18 +1482,28 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   }, [matched, dateFilterRange]);
 
   // When a date filter is active, compute the account size at the start of the period
-  // by rolling through all trades that occurred *before* the filter window
+  // by rolling through all trades AND cash events (dividends, deposits, withdrawals, interest)
+  // that occurred *before* the filter window. This gives the actual account balance at period start.
   const computedPeriodStart = useMemo(() => {
     const { from } = dateFilterRange;
-    if (!from || !matched.length) return accountSize;
+    if (!from || (!matched.length && !cashEvents.length)) return accountSize;
     let running = accountSize;
+    // Sum P&L from matched trades before the period
     const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
     for (const t of sorted) {
       if (new Date(t.sellDate) >= from) break;
       running += t.pnl;
     }
+    // Add cash events (dividends, deposits, withdrawals, interest) before the period
+    if (cashEvents.length > 0) {
+      const sortedEvents = [...cashEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+      for (const e of sortedEvents) {
+        if (new Date(e.date) >= from) break;
+        running += e.amount;
+      }
+    }
     return Math.round(running * 100) / 100;
-  }, [matched, dateFilterRange, accountSize]);
+  }, [matched, cashEvents, dateFilterRange, accountSize]);
 
   const isFiltered = dateFilterRange.from !== null || dateFilterRange.to !== null;
 
@@ -1866,7 +2008,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
           {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow }}>Saving...</span>}
           {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green }}>Saved</span>}
           {saveStatus === "error" && <span style={{ fontSize: 10, color: C.red }}>Save failed</span>}
-          <button onClick={() => { setLoaded(false); setMatched([]); }} style={{ padding: "6px 14px", border: `0.5px solid ${C.border}`, borderRadius: 10, background: "transparent", color: C.textDim, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, transition: "all 0.2s" }}
+          <button onClick={() => { setLoaded(false); setMatched([]); setCashEvents([]); }} style={{ padding: "6px 14px", border: `0.5px solid ${C.border}`, borderRadius: 10, background: "transparent", color: C.textDim, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500, transition: "all 0.2s" }}
             onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
             onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
           >New Import</button>
@@ -1878,7 +2020,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               opacity: syncLoading ? 0.6 : 1,
             }}>{syncLoading ? "Syncing..." : "Sync Broker"}</button>
           )}
-          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); }}} style={{ padding: "6px 14px", border: `0.5px solid rgba(255,59,48,0.2)`, borderRadius: 10, background: "transparent", color: C.red, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500 }}>Clear</button>}
+          {onClearTrades && <button onClick={async () => { if (confirm("Delete all saved trades from the database?")) { await onClearTrades(); setLoaded(false); setMatched([]); setCashEvents([]); }}} style={{ padding: "6px 14px", border: `0.5px solid rgba(255,59,48,0.2)`, borderRadius: 10, background: "transparent", color: C.red, fontSize: 11, cursor: "pointer", fontFamily: "'Inter', -apple-system, sans-serif", fontWeight: 500 }}>Clear</button>}
         </div>
       </div>
 

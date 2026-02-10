@@ -126,6 +126,51 @@ function activityToTrade(activity) {
   };
 }
 
+// Convert SnapTrade activity to a cash event (dividend, deposit, withdrawal, interest)
+function activityToCashEvent(activity) {
+  const type = (activity.type || '').toUpperCase().trim();
+
+  // Map SnapTrade activity types to our cash event types
+  let eventType = null;
+  if (type.includes('DIVIDEND') || type.includes('DIV') || type === 'REI') eventType = 'DIVIDEND';
+  else if (type.includes('INTEREST')) eventType = 'INTEREST';
+  else if (type.includes('DEPOSIT') || type.includes('CONTRIBUTION') || type.includes('FUNDING')) eventType = 'DEPOSIT';
+  else if (type.includes('WITHDRAWAL') || type.includes('DISBURSEMENT') || type.includes('DISTRIBUTION')) eventType = 'WITHDRAWAL';
+  else if (type.includes('TRANSFER') || type.includes('JOURNAL')) eventType = 'TRANSFER';
+  else if (type.includes('FEE') || type.includes('CHARGE')) eventType = 'FEE';
+  if (!eventType) return null;
+
+  // Skip if it's already captured as a trade (REI with valid buy action)
+  if (normalizeAction(activity)) return null;
+
+  const amount = Number(activity.amount) || Number(activity.price) || 0;
+  if (amount === 0) return null;
+
+  const dateStr = activity.trade_date || activity.settlement_date || activity.date || '';
+  let date = '';
+  if (dateStr) {
+    try {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        date = parsed.toISOString().split('T')[0];
+      }
+    } catch {
+      // Invalid date
+    }
+  }
+  if (!date) return null;
+
+  const symbol = activity.symbol?.symbol || activity.symbol?.raw_symbol || '';
+
+  return {
+    date,
+    type: eventType,
+    amount,
+    symbol: symbol ? symbol.split(' ')[0].toUpperCase() : null,
+    description: activity.description || type,
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -161,6 +206,7 @@ export default async function handler(req, res) {
 
     // Fetch activities from all accounts
     const allTrades = [];
+    const allCashEvents = [];
     const startDate = req.body?.startDate || '2020-01-01';
     const endDate = req.body?.endDate || new Date().toISOString().split('T')[0];
 
@@ -215,9 +261,15 @@ export default async function handler(req, res) {
               if (trade) {
                 allTrades.push(trade);
               } else {
-                const diag = diagnoseDrop(activity);
-                const key = `${diag.reason}:${diag.type || ''}`;
-                droppedReasons[key] = (droppedReasons[key] || 0) + 1;
+                // Try to capture as a cash event (dividend, deposit, withdrawal, etc.)
+                const cashEvent = activityToCashEvent(activity);
+                if (cashEvent) {
+                  allCashEvents.push(cashEvent);
+                } else {
+                  const diag = diagnoseDrop(activity);
+                  const key = `${diag.reason}:${diag.type || ''}`;
+                  droppedReasons[key] = (droppedReasons[key] || 0) + 1;
+                }
               }
             } catch (parseErr) {
               console.error('Failed to parse activity:', parseErr.message, JSON.stringify(activity).slice(0, 200));
@@ -240,13 +292,14 @@ export default async function handler(req, res) {
     }
 
     // Log diagnostic summary
-    const droppedCount = totalActivitiesFetched - allTrades.length;
+    const recognizedCount = allTrades.length + allCashEvents.length;
+    const droppedCount = totalActivitiesFetched - recognizedCount;
     if (droppedCount > 0) {
-      console.log(`Sync diagnostics: ${totalActivitiesFetched} fetched, ${allTrades.length} recognized as trades, ${droppedCount} filtered out`);
+      console.log(`Sync diagnostics: ${totalActivitiesFetched} fetched, ${allTrades.length} trades, ${allCashEvents.length} cash events, ${droppedCount} filtered out`);
       console.log('Filtered activity breakdown:', droppedReasons);
     }
 
-    if (allTrades.length === 0) {
+    if (allTrades.length === 0 && allCashEvents.length === 0) {
       await supabase
         .from('broker_connections')
         .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
@@ -266,30 +319,53 @@ export default async function handler(req, res) {
         msg += ' Your broker returned no activities for this date range.';
       }
 
-      return res.status(200).json({ trades: 0, totalActivities: totalActivitiesFetched, filtered: droppedReasons, message: msg });
+      return res.status(200).json({ trades: 0, cashEvents: 0, totalActivities: totalActivitiesFetched, filtered: droppedReasons, message: msg });
     }
 
     // Save trades to DB (upsert to avoid duplicates)
-    const rows = allTrades.map(t => ({
-      user_id: user.id,
-      date: t.date,
-      symbol: t.symbol,
-      description: t.description,
-      action: t.action,
-      quantity: t.quantity,
-      price: t.price,
-      commission: t.commission,
-      fees: t.fees,
-      amount: t.amount,
-    }));
+    if (allTrades.length > 0) {
+      const rows = allTrades.map(t => ({
+        user_id: user.id,
+        date: t.date,
+        symbol: t.symbol,
+        description: t.description,
+        action: t.action,
+        quantity: t.quantity,
+        price: t.price,
+        commission: t.commission,
+        fees: t.fees,
+        amount: t.amount,
+      }));
 
-    const { error: upsertError } = await supabase
-      .from('trades')
-      .upsert(rows, { onConflict: 'user_id,date,symbol,action,quantity,price', ignoreDuplicates: true });
+      const { error: upsertError } = await supabase
+        .from('trades')
+        .upsert(rows, { onConflict: 'user_id,date,symbol,action,quantity,price', ignoreDuplicates: true });
 
-    if (upsertError) {
-      console.error('Upsert error:', upsertError);
-      return res.status(500).json({ error: 'Failed to save trades' });
+      if (upsertError) {
+        console.error('Upsert error:', upsertError);
+        return res.status(500).json({ error: 'Failed to save trades' });
+      }
+    }
+
+    // Save cash events to DB (upsert to avoid duplicates)
+    if (allCashEvents.length > 0) {
+      const cashRows = allCashEvents.map(e => ({
+        user_id: user.id,
+        date: e.date,
+        type: e.type,
+        amount: e.amount,
+        symbol: e.symbol || null,
+        description: e.description || '',
+      }));
+
+      const { error: cashError } = await supabase
+        .from('cash_events')
+        .upsert(cashRows, { onConflict: 'user_id,date,type,amount,coalesce(symbol, \'\')', ignoreDuplicates: true });
+
+      if (cashError) {
+        console.error('Cash events upsert error:', cashError);
+        // Non-fatal: log but continue
+      }
     }
 
     // Update last sync timestamp
@@ -298,13 +374,18 @@ export default async function handler(req, res) {
       .update({ last_sync_at: new Date().toISOString(), status: 'connected' })
       .eq('user_id', user.id);
 
+    const parts = [`Synced ${allTrades.length} trades`];
+    if (allCashEvents.length > 0) parts.push(`${allCashEvents.length} cash events`);
+    parts.push(`from ${accounts.length} account(s) (${startDate} to ${endDate})`);
+
     return res.status(200).json({
       trades: allTrades.length,
+      cashEvents: allCashEvents.length,
       accounts: accounts.length,
       totalActivities: totalActivitiesFetched,
       filtered: droppedCount > 0 ? droppedReasons : undefined,
       dateRange: { startDate, endDate },
-      message: `Synced ${allTrades.length} trades from ${accounts.length} account(s) (${startDate} to ${endDate}).`,
+      message: parts.join(', ') + '.',
     });
   } catch (err) {
     console.error('SnapTrade sync error:', err);

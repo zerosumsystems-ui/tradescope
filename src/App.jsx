@@ -135,6 +135,7 @@ export default function App() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [savedTrades, setSavedTrades] = useState([])
+  const [savedCashEvents, setSavedCashEvents] = useState([])
   const [settings, setSettings] = useState({ account_size: 100000, risk_percent: 1 })
   const [dashboardStats, setDashboardStats] = useState(null)
   const { plan, isPro, isElite } = useSubscription(session?.user?.id)
@@ -157,8 +158,9 @@ export default function App() {
 
   const loadUserData = async (userId) => {
     try {
-      const [trades, userSettings] = await Promise.all([
+      const [trades, cashEvents, userSettings] = await Promise.all([
         db.loadTrades(userId),
+        db.loadCashEvents(userId),
         db.loadSettings(userId),
       ])
       const formatted = trades.map(t => ({
@@ -173,6 +175,13 @@ export default function App() {
         amount: Number(t.amount),
       }))
       setSavedTrades(formatted)
+      setSavedCashEvents(cashEvents.map(e => ({
+        date: e.date,
+        type: e.type,
+        amount: Number(e.amount),
+        symbol: e.symbol || null,
+        description: e.description || '',
+      })))
       if (userSettings) {
         setSettings({
           account_size: Number(userSettings.account_size),
@@ -197,8 +206,12 @@ export default function App() {
   const handleClearTrades = useCallback(async () => {
     if (!session) return
     try {
-      await db.deleteTrades(session.user.id)
+      await Promise.all([
+        db.deleteTrades(session.user.id),
+        db.deleteCashEvents(session.user.id),
+      ])
       setSavedTrades([])
+      setSavedCashEvents([])
     } catch (err) {
       console.error('Failed to clear trades:', err)
     }
@@ -217,6 +230,7 @@ export default function App() {
     await db.signOut()
     setSession(null)
     setSavedTrades([])
+    setSavedCashEvents([])
   }, [])
 
   if (loading) {
@@ -247,6 +261,7 @@ export default function App() {
         <Route path="/dashboard" element={
           <TradeDashboard
             savedTrades={savedTrades}
+            savedCashEvents={savedCashEvents}
             onSaveTrades={handleSaveTrades}
             onClearTrades={handleClearTrades}
             onSettingsChange={handleSettingsChange}

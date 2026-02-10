@@ -55,6 +55,34 @@ create policy "Users can upsert own settings"
 create policy "Users can update own settings"
   on user_settings for update using (auth.uid() = user_id);
 
+-- Cash events table: dividends, deposits, withdrawals, interest, etc.
+-- These non-trade cash flows are needed to compute accurate account balances.
+create table if not exists cash_events (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  date text not null,
+  type text not null check (type in ('DIVIDEND', 'DEPOSIT', 'WITHDRAWAL', 'INTEREST', 'FEE', 'TRANSFER', 'OTHER')),
+  amount numeric not null,
+  symbol text,
+  description text,
+  imported_at timestamptz default now(),
+  -- Prevent duplicate imports
+  unique(user_id, date, type, amount, coalesce(symbol, ''))
+);
+
+alter table cash_events enable row level security;
+
+create policy "Users can view own cash_events"
+  on cash_events for select using (auth.uid() = user_id);
+
+create policy "Users can insert own cash_events"
+  on cash_events for insert with check (auth.uid() = user_id);
+
+create policy "Users can delete own cash_events"
+  on cash_events for delete using (auth.uid() = user_id);
+
+create index if not exists idx_cash_events_user_date on cash_events(user_id, date);
+
 -- Index for fast queries
 create index if not exists idx_trades_user_symbol on trades(user_id, symbol);
 create index if not exists idx_trades_user_date on trades(user_id, date);

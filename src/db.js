@@ -75,6 +75,47 @@ export async function deleteTrades(userId) {
   if (error) throw error
 }
 
+// ── Cash Events (dividends, deposits, withdrawals, interest) ──
+export async function saveCashEvents(userId, events) {
+  if (!events || events.length === 0) return []
+  const rows = events.map(e => ({
+    user_id: userId,
+    date: e.date,
+    type: e.type,
+    amount: e.amount,
+    symbol: e.symbol || null,
+    description: e.description || '',
+  }))
+
+  const { data, error } = await supabase
+    .from('cash_events')
+    .upsert(rows, { onConflict: 'user_id,date,type,amount,coalesce(symbol, \'\')', ignoreDuplicates: true })
+    .select()
+
+  if (error) throw error
+  return data
+}
+
+export async function loadCashEvents(userId) {
+  const { data, error } = await supabase
+    .from('cash_events')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function deleteCashEvents(userId) {
+  const { error } = await supabase
+    .from('cash_events')
+    .delete()
+    .eq('user_id', userId)
+
+  if (error) throw error
+}
+
 // ── Settings ──
 export async function loadSettings(userId) {
   const { data, error } = await supabase
