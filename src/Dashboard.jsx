@@ -1485,41 +1485,33 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
     });
   }, [matched, dateFilterRange]);
 
-  // When a date filter is active, compute the account balance at the start of the period.
-  // If we have a real balance from SnapTrade, work BACKWARDS: currentBalance - P&L in period - cashEvents in period.
+  // Compute the account balance at the start of the displayed period.
+  // If we have a real balance from SnapTrade, work BACKWARDS: currentBalance - P&L - cashEvents.
   // Otherwise fall back to the old forward approach: accountSize + P&L before period + cashEvents before period.
   const computedPeriodStart = useMemo(() => {
     const { from, to } = dateFilterRange;
-    if (!from || (!matched.length && !cashEvents.length)) return accountSize;
-
     const realBalance = brokerStatus?.totalBalance;
-    if (realBalance != null) {
-      // Work backwards from the real current balance
-      let inPeriodPnL = 0;
+
+    if (realBalance != null && (matched.length || cashEvents.length)) {
+      // Work backwards from the real current balance.
+      // Subtract all P&L and cash events that fall within (or after) the viewed period,
+      // since those happened AFTER the start we're computing.
+      let totalPnL = 0;
+      let totalCash = 0;
       for (const t of matched) {
         const d = new Date(t.sellDate);
-        if (d >= from && (!to || d <= to)) inPeriodPnL += t.pnl;
+        if (!from || d >= from) totalPnL += t.pnl;
       }
-      let inPeriodCash = 0;
       for (const e of cashEvents) {
         const d = new Date(e.date);
-        if (d >= from && (!to || d <= to)) inPeriodCash += e.amount;
+        if (!from || d >= from) totalCash += e.amount;
       }
-      // Also subtract P&L and cash events AFTER the filter window (if using a bounded range)
-      let afterPeriodPnL = 0;
-      let afterPeriodCash = 0;
-      if (to) {
-        for (const t of matched) {
-          if (new Date(t.sellDate) > to) afterPeriodPnL += t.pnl;
-        }
-        for (const e of cashEvents) {
-          if (new Date(e.date) > to) afterPeriodCash += e.amount;
-        }
-      }
-      return Math.round((realBalance - inPeriodPnL - inPeriodCash - afterPeriodPnL - afterPeriodCash) * 100) / 100;
+      return Math.round((realBalance - totalPnL - totalCash) * 100) / 100;
     }
 
-    // Fallback: build forward from accountSize + everything before the period
+    // No real balance — fall back to building forward from accountSize
+    if (!from || (!matched.length && !cashEvents.length)) return accountSize;
+
     let running = accountSize;
     const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
     for (const t of sorted) {
