@@ -1162,6 +1162,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   const [riskPct, setRiskPct] = useState(initialSettings?.risk_percent || 1);
   const [accountSize, setAccountSize] = useState(initialSettings?.account_size || 100000);
   const [accountSizeInput, setAccountSizeInput] = useState(String(initialSettings?.account_size || 100000));
+  const [startOverride, setStartOverride] = useState(null); // manual override for filtered period start
   const [saveStatus, setSaveStatus] = useState("");
   const [strategyTags, setStrategyTags] = useState(() => {
     try { return JSON.parse(localStorage.getItem("aiedge_strategies") || localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
@@ -1348,9 +1349,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     });
   }, [matched, dateFilterRange]);
 
-  // When a date filter is active, compute effective account size at the start of the period
+  // When a date filter is active, compute the account size at the start of the period
   // by rolling through all trades that occurred *before* the filter window
-  const effectiveStartSize = useMemo(() => {
+  const computedPeriodStart = useMemo(() => {
     const { from } = dateFilterRange;
     if (!from || !matched.length) return accountSize;
     let running = accountSize;
@@ -1363,6 +1364,15 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
   }, [matched, dateFilterRange, accountSize]);
 
   const isFiltered = dateFilterRange.from !== null || dateFilterRange.to !== null;
+
+  // Use manual override if set, otherwise use computed value
+  const effectiveStartSize = startOverride !== null && isFiltered ? startOverride : computedPeriodStart;
+
+  // When the filter changes, clear the manual override so it auto-computes
+  useEffect(() => {
+    setStartOverride(null);
+  }, [dateFilter, customDateFrom, customDateTo]);
+
   const effectiveRiskPerTrade = (effectiveStartSize * riskPct) / 100;
 
   const stats = useMemo(() => {
@@ -1842,12 +1852,15 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         {/* Controls */}
         <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "6px 12px" }}>
-            <label style={{ fontSize: 10, color: C.textMuted }}>Start</label>
-            <input type="number" value={accountSizeInput} onChange={e => { setAccountSizeInput(e.target.value); const v = Number(e.target.value); if (v > 0) setAccountSize(v); }} onBlur={() => { if (!Number(accountSizeInput)) { setAccountSizeInput(String(accountSize)); } }} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            <label style={{ fontSize: 10, color: C.textMuted }}>{isFiltered ? "Period start" : "Start"}</label>
+            {isFiltered ? (
+              <input type="number" value={startOverride !== null ? startOverride : effectiveStartSize} onChange={e => { const v = Number(e.target.value); setStartOverride(v > 0 ? v : null); }} onBlur={() => { if (startOverride !== null && startOverride <= 0) setStartOverride(null); }} style={{ width: 85, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.cyan}44`, borderRadius: 6, color: C.cyan, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            ) : (
+              <input type="number" value={accountSizeInput} onChange={e => { setAccountSizeInput(e.target.value); const v = Number(e.target.value); if (v > 0) setAccountSize(v); }} onBlur={() => { if (!Number(accountSizeInput)) { setAccountSizeInput(String(accountSize)); } }} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            )}
             <label style={{ fontSize: 10, color: C.textMuted }}>Risk</label>
             <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 44, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
-            <span style={{ fontSize: 10, color: C.textDim }}>1R=${(isFiltered ? effectiveRiskPerTrade : riskPerTrade).toLocaleString()}</span>
-            {isFiltered && effectiveStartSize !== accountSize && <span style={{ fontSize: 10, color: C.cyan }}>Period start ${effectiveStartSize.toLocaleString()}</span>}
+            <span style={{ fontSize: 10, color: C.textDim }}>1R=${effectiveRiskPerTrade.toLocaleString()}</span>
             {stats?.finalAccountSize && <span style={{ fontSize: 10, color: C.green }}>Now ${stats.finalAccountSize.toLocaleString()}</span>}
           </div>
           {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow }}>Saving...</span>}
