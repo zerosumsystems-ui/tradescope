@@ -1317,8 +1317,23 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
 
   const stats = useMemo(() => {
     if (!matched.length) return null;
-    const R = riskPerTrade;
-    const rMultiples = matched.map(t => Math.round((t.pnl / R) * 1000) / 1000);
+
+    // Sort trades chronologically — R must be calculated in order
+    const sortedByDate = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
+
+    // Dynamic R: each trade's 1R is based on the account size at that point
+    let runningAccount = accountSize;
+    const rMultipleMap = new Map();
+    const rMultiples = []; // in sortedByDate order
+    for (const t of sortedByDate) {
+      const dynamicR = (runningAccount * riskPct) / 100;
+      const rm = Math.round((t.pnl / dynamicR) * 1000) / 1000;
+      rMultiples.push(rm);
+      rMultipleMap.set(t, rm);
+      runningAccount += t.pnl;
+    }
+    const finalAccountSize = runningAccount;
+
     const winRm = rMultiples.filter(r => r > 0);
     const lossRm = rMultiples.filter(r => r <= 0);
     const n = rMultiples.length;
@@ -1333,7 +1348,6 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     const profitFactorR = Math.abs(lossRm.reduce((s, r) => s + r, 0)) > 0 ? winRm.reduce((s, r) => s + r, 0) / Math.abs(lossRm.reduce((s, r) => s + r, 0)) : Infinity;
     const expectancyRatio = stdR > 0 ? meanR / stdR : 0;
     const expRating = getExpRatioRating(expectancyRatio);
-    const sortedByDate = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
     const firstDate = new Date(sortedByDate[0].sellDate);
     const lastDate = new Date(sortedByDate[sortedByDate.length - 1].sellDate);
     const tradingDays = Math.max(1, Math.round((lastDate - firstDate) / 86400000));
@@ -1341,11 +1355,11 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     const tradesPerMonth = n / tradingMonths;
     const expectunity = meanR * tradesPerMonth;
     let cumR = 0;
-    const cumRData = sortedByDate.map((t, i) => { cumR += rMultiples[matched.indexOf(t)]; return { date: t.sellDate, cumR: Math.round(cumR * 100) / 100, trade: i + 1 }; });
+    const cumRData = sortedByDate.map((t, i) => { cumR += rMultiples[i]; return { date: t.sellDate, cumR: Math.round(cumR * 100) / 100, trade: i + 1 }; });
     const totalR = Math.round(cumR * 100) / 100;
     let peakR = 0, maxDDR = 0, runCumR = 0;
     const ddRData = sortedByDate.map((t, i) => {
-      runCumR += rMultiples[matched.indexOf(t)];
+      runCumR += rMultiples[i];
       if (runCumR > peakR) peakR = runCumR;
       const dd = peakR - runCumR;
       if (dd > maxDDR) maxDDR = dd;
@@ -1363,7 +1377,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     const symbols = [...new Set(matched.map(t => t.symbol))];
     const bySymbol = symbols.map(sym => {
       const st = matched.filter(t => t.symbol === sym);
-      const symR = st.map(t => rMultiples[matched.indexOf(t)]);
+      const symR = st.map(t => rMultipleMap.get(t));
       const symTotalR = symR.reduce((s, r) => s + r, 0);
       return { symbol: sym, trades: st.length, totalR: Math.round(symTotalR * 100) / 100, avgR: Math.round((symTotalR / st.length) * 100) / 100, winRate: Math.round((symR.filter(r => r > 0).length / st.length) * 100), totalPnl: Math.round(st.reduce((s, t) => s + t.pnl, 0) * 100) / 100 };
     }).sort((a, b) => b.totalR - a.totalR);
@@ -1372,13 +1386,13 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       const d = new Date(sortedByDate[i].sellDate);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       if (!monthly[key]) monthly[key] = { month: key, totalR: 0, trades: 0, wins: 0 };
-      monthly[key].totalR += rMultiples[matched.indexOf(sortedByDate[i])];
+      monthly[key].totalR += rMultiples[i];
       monthly[key].trades++;
-      if (rMultiples[matched.indexOf(sortedByDate[i])] > 0) monthly[key].wins++;
+      if (rMultiples[i] > 0) monthly[key].wins++;
     }
     const monthlyData = Object.values(monthly).sort((a, b) => a.month.localeCompare(b.month));
     monthlyData.forEach(m => { m.totalR = Math.round(m.totalR * 100) / 100; m.winRate = Math.round((m.wins / m.trades) * 100); });
-    const tradeData = sortedByDate.map((t, i) => ({ ...t, rMultiple: Math.round(rMultiples[matched.indexOf(t)] * 100) / 100, idx: i + 1 }));
+    const tradeData = sortedByDate.map((t, i) => ({ ...t, rMultiple: Math.round(rMultiples[i] * 100) / 100, idx: i + 1 }));
     const sortedByR = [...tradeData].sort((a, b) => b.rMultiple - a.rMultiple);
     const totalPnL = matched.reduce((s, t) => s + t.pnl, 0);
     // Median R
@@ -1409,8 +1423,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       tradingDays, medianR: Math.round(medianR * 1000) / 1000,
       skewness: Math.round(skewness * 100) / 100,
       kurtosis: Math.round(kurtosis * 100) / 100,
+      finalAccountSize: Math.round(finalAccountSize * 100) / 100,
     };
-  }, [matched, riskPerTrade]);
+  }, [matched, accountSize, riskPct]);
 
   // Propagate stats to parent for Insights page
   useEffect(() => {
@@ -1488,7 +1503,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                 <div style={{ fontSize: 10, fontWeight: 600, color: C.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>R-value configuration</div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Account Size ($)</label>
+                    <label style={{ fontSize: 10, color: C.textDim, display: "block", marginBottom: 4 }}>Starting Account Size ($)</label>
                     <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
                   </div>
                   <div style={{ flex: 1 }}>
@@ -1496,7 +1511,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
                     <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: "100%", padding: "8px 10px", background: C.bgAlt, border: `0.5px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none", boxSizing: "border-box" }} />
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>1R = ${riskPerTrade.toLocaleString()} per trade</div>
+                <div style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>Starting 1R = ${riskPerTrade.toLocaleString()} · R adjusts dynamically with account growth</div>
               </div>
             </div>
           </div>
@@ -1753,11 +1768,12 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
         {/* Controls */}
         <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "6px 12px" }}>
-            <label style={{ fontSize: 10, color: C.textMuted }}>Acct</label>
+            <label style={{ fontSize: 10, color: C.textMuted }}>Start</label>
             <input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value) || 100000)} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
             <label style={{ fontSize: 10, color: C.textMuted }}>Risk</label>
             <input type="number" value={riskPct} step="0.25" onChange={e => setRiskPct(Number(e.target.value) || 1)} style={{ width: 44, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
             <span style={{ fontSize: 10, color: C.textDim }}>1R=${riskPerTrade.toLocaleString()}</span>
+            {stats?.finalAccountSize && <span style={{ fontSize: 10, color: C.green }}>Now ${stats.finalAccountSize.toLocaleString()}</span>}
           </div>
           {saveStatus === "saving" && <span style={{ fontSize: 10, color: C.yellow }}>Saving...</span>}
           {saveStatus === "saved" && <span style={{ fontSize: 10, color: C.green }}>Saved</span>}
