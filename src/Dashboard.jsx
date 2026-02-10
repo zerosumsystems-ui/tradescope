@@ -1486,31 +1486,31 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
   }, [matched, dateFilterRange]);
 
   // Compute the account balance at the start of the displayed period.
-  // If we have a real balance from SnapTrade, work BACKWARDS: currentBalance - P&L - cashEvents.
-  // Otherwise fall back to the old forward approach: accountSize + P&L before period + cashEvents before period.
+  // All Time: use accountSize (the account's inception balance).
+  // Filtered periods: if we have a real balance from SnapTrade, work BACKWARDS
+  // from currentBalance - P&L in/after period - cashEvents in/after period.
   const computedPeriodStart = useMemo(() => {
     const { from, to } = dateFilterRange;
-    const realBalance = brokerStatus?.totalBalance;
 
-    if (realBalance != null && (matched.length || cashEvents.length)) {
+    // All Time (no date filter) — starting balance is the account inception value
+    if (!from) return accountSize;
+
+    if (!matched.length && !cashEvents.length) return accountSize;
+
+    const realBalance = brokerStatus?.totalBalance;
+    if (realBalance != null) {
       // Work backwards from the real current balance.
-      // Subtract all P&L and cash events that fall within (or after) the viewed period,
-      // since those happened AFTER the start we're computing.
-      let totalPnL = 0;
-      let totalCash = 0;
+      // Subtract all P&L and cash events from the period start onward.
+      let sinceStartPnL = 0;
+      let sinceStartCash = 0;
       for (const t of matched) {
-        const d = new Date(t.sellDate);
-        if (!from || d >= from) totalPnL += t.pnl;
+        if (new Date(t.sellDate) >= from) sinceStartPnL += t.pnl;
       }
       for (const e of cashEvents) {
-        const d = new Date(e.date);
-        if (!from || d >= from) totalCash += e.amount;
+        if (new Date(e.date) >= from) sinceStartCash += e.amount;
       }
-      return Math.round((realBalance - totalPnL - totalCash) * 100) / 100;
+      return Math.round((realBalance - sinceStartPnL - sinceStartCash) * 100) / 100;
     }
-
-    // No real balance — fall back to building forward from accountSize
-    if (!from || (!matched.length && !cashEvents.length)) return accountSize;
 
     let running = accountSize;
     const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
