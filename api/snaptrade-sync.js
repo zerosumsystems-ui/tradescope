@@ -70,11 +70,14 @@ const MONEY_MARKET_SYMBOLS = new Set([
 function isMoneyMarket(activity) {
   const sym = (activity.symbol?.symbol || activity.symbol?.raw_symbol || '').toUpperCase().split(' ')[0];
   if (MONEY_MARKET_SYMBOLS.has(sym)) return true;
-  // Check security type from SnapTrade metadata
-  const secType = (activity.symbol?.type || '').toLowerCase();
-  if (secType.includes('money market') || secType.includes('cash')) return true;
-  const desc = (activity.description || activity.symbol?.description || '').toLowerCase();
-  if (desc.includes('money market') || desc.includes('cash sweep')) return true;
+  // Check security type from SnapTrade metadata (type can be an object with .code/.description)
+  const rawType = activity.symbol?.type;
+  const secType = (typeof rawType === 'string' ? rawType : rawType?.code || rawType?.description || '').toLowerCase();
+  if (secType.includes('money market')) return true;
+  const desc = (typeof activity.description === 'string' ? activity.description : '').toLowerCase();
+  const symDesc = (typeof activity.symbol?.description === 'string' ? activity.symbol.description : '').toLowerCase();
+  if (desc.includes('money market') || desc.includes('cash sweep')
+    || symDesc.includes('money market') || symDesc.includes('cash sweep')) return true;
   return false;
 }
 
@@ -207,14 +210,18 @@ export default async function handler(req, res) {
           console.log(`Account ${account.id}: ${activities.length} activities (offset=${offset}), types:`, typeSummary);
 
           for (const activity of activities) {
-            const trade = activityToTrade(activity);
-            if (trade) {
-              allTrades.push(trade);
-            } else {
-              // Track why this activity was dropped
-              const diag = diagnoseDrop(activity);
-              const key = `${diag.reason}:${diag.type || ''}`;
-              droppedReasons[key] = (droppedReasons[key] || 0) + 1;
+            try {
+              const trade = activityToTrade(activity);
+              if (trade) {
+                allTrades.push(trade);
+              } else {
+                const diag = diagnoseDrop(activity);
+                const key = `${diag.reason}:${diag.type || ''}`;
+                droppedReasons[key] = (droppedReasons[key] || 0) + 1;
+              }
+            } catch (parseErr) {
+              console.error('Failed to parse activity:', parseErr.message, JSON.stringify(activity).slice(0, 200));
+              droppedReasons['parse_error'] = (droppedReasons['parse_error'] || 0) + 1;
             }
           }
 
