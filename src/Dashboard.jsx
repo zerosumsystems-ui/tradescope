@@ -1166,6 +1166,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     try { return JSON.parse(localStorage.getItem("aiedge_strategies") || localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
   });
   const [filterStrategy, setFilterStrategy] = useState("");
+  const [dateFilter, setDateFilter] = useState("all"); // all, ytd, 12mo, 3yr, custom
+  const [customDateFrom, setCustomDateFrom] = useState("");
+  const [customDateTo, setCustomDateTo] = useState("");
   const [detectedBroker, setDetectedBroker] = useState("");
   const fileRef = useRef(null);
 
@@ -1315,11 +1318,34 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     }
   }, [accountSize, riskPct, onSettingsChange]);
 
+  const filteredMatched = useMemo(() => {
+    if (!matched.length) return matched;
+    const now = new Date();
+    let from = null, to = null;
+    if (dateFilter === "ytd") {
+      from = new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
+    } else if (dateFilter === "12mo") {
+      from = new Date(now); from.setFullYear(from.getFullYear() - 1);
+    } else if (dateFilter === "3yr") {
+      from = new Date(now); from.setFullYear(from.getFullYear() - 3);
+    } else if (dateFilter === "custom") {
+      if (customDateFrom) from = new Date(customDateFrom);
+      if (customDateTo) to = new Date(customDateTo + "T23:59:59");
+    }
+    if (!from && !to) return matched;
+    return matched.filter(t => {
+      const d = new Date(t.sellDate);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }, [matched, dateFilter, customDateFrom, customDateTo]);
+
   const stats = useMemo(() => {
-    if (!matched.length) return null;
+    if (!filteredMatched.length) return null;
 
     // Sort trades chronologically — R must be calculated in order
-    const sortedByDate = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
+    const sortedByDate = [...filteredMatched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
 
     // Dynamic R: each trade's 1R is based on the account size at that point
     let runningAccount = accountSize;
@@ -1374,9 +1400,9 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     }
     let maxWS = 0, maxLS = 0, cW = 0, cL = 0;
     for (const r of rMultiples) { if (r > 0) { cW++; cL = 0; maxWS = Math.max(maxWS, cW); } else { cL++; cW = 0; maxLS = Math.max(maxLS, cL); } }
-    const symbols = [...new Set(matched.map(t => t.symbol))];
+    const symbols = [...new Set(filteredMatched.map(t => t.symbol))];
     const bySymbol = symbols.map(sym => {
-      const st = matched.filter(t => t.symbol === sym);
+      const st = filteredMatched.filter(t => t.symbol === sym);
       const symR = st.map(t => rMultipleMap.get(t));
       const symTotalR = symR.reduce((s, r) => s + r, 0);
       return { symbol: sym, trades: st.length, totalR: Math.round(symTotalR * 100) / 100, avgR: Math.round((symTotalR / st.length) * 100) / 100, winRate: Math.round((symR.filter(r => r > 0).length / st.length) * 100), totalPnl: Math.round(st.reduce((s, t) => s + t.pnl, 0) * 100) / 100 };
@@ -1394,7 +1420,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     monthlyData.forEach(m => { m.totalR = Math.round(m.totalR * 100) / 100; m.winRate = Math.round((m.wins / m.trades) * 100); });
     const tradeData = sortedByDate.map((t, i) => ({ ...t, rMultiple: Math.round(rMultiples[i] * 100) / 100, idx: i + 1 }));
     const sortedByR = [...tradeData].sort((a, b) => b.rMultiple - a.rMultiple);
-    const totalPnL = matched.reduce((s, t) => s + t.pnl, 0);
+    const totalPnL = filteredMatched.reduce((s, t) => s + t.pnl, 0);
     // Median R
     const sortedR = [...rMultiples].sort((a, b) => a - b);
     const medianR = n % 2 === 0 ? (sortedR[n / 2 - 1] + sortedR[n / 2]) / 2 : sortedR[Math.floor(n / 2)];
@@ -1425,7 +1451,7 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
       kurtosis: Math.round(kurtosis * 100) / 100,
       finalAccountSize: Math.round(finalAccountSize * 100) / 100,
     };
-  }, [matched, accountSize, riskPct]);
+  }, [filteredMatched, accountSize, riskPct]);
 
   // Propagate stats to parent for Insights page
   useEffect(() => {
@@ -1764,6 +1790,39 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               transition: "all 0.2s ease", letterSpacing: "-0.01em",
             }}>{tab.label}</button>
           ))}
+        </div>
+        {/* Date Filter */}
+        <div style={{ display: "flex", gap: 4, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3 }}>
+          {[
+            { id: "all", label: "All" },
+            { id: "ytd", label: "YTD" },
+            { id: "12mo", label: "12M" },
+            { id: "3yr", label: "3Y" },
+            { id: "custom", label: "Custom" },
+          ].map(f => (
+            <button key={f.id} onClick={() => setDateFilter(f.id)} style={{
+              padding: "5px 12px", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit",
+              background: dateFilter === f.id ? "rgba(255,255,255,0.1)" : "transparent",
+              color: dateFilter === f.id ? C.text : C.textMuted,
+              transition: "all 0.2s",
+            }}>{f.label}</button>
+          ))}
+          {dateFilter === "custom" && (
+            <>
+              <input type="date" value={customDateFrom} onChange={e => setCustomDateFrom(e.target.value)} style={{
+                padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`,
+                borderRadius: 6, color: C.text, fontSize: 10, fontFamily: "inherit", outline: "none",
+                colorScheme: "dark", width: 110,
+              }} />
+              <span style={{ fontSize: 10, color: C.textDim }}>to</span>
+              <input type="date" value={customDateTo} onChange={e => setCustomDateTo(e.target.value)} style={{
+                padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`,
+                borderRadius: 6, color: C.text, fontSize: 10, fontFamily: "inherit", outline: "none",
+                colorScheme: "dark", width: 110,
+              }} />
+            </>
+          )}
         </div>
         {/* Controls */}
         <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
