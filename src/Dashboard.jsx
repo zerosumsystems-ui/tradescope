@@ -1497,31 +1497,32 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
   }, [matched, dateFilterRange]);
 
   // Compute the account balance at the start of the displayed period.
-  // All Time: always accountSize (the user's inception balance).
-  // Filtered periods: if we have a real balance from SnapTrade, work BACKWARDS
-  // from currentBalance - period P&L - period cashEvents.
-  // Otherwise build forward: accountSize + pre-period P&L + pre-period cashEvents.
+  // With SnapTrade: work BACKWARDS from realBalance - P&L - cashEvents in/after period.
+  //   This works for All Time too (subtracts everything → inception balance).
+  // Without SnapTrade:
+  //   All Time → accountSize (user-configured inception balance).
+  //   Filtered → accountSize + pre-period P&L + pre-period cashEvents.
   const computedPeriodStart = useMemo(() => {
-    const { from, to } = dateFilterRange;
-
-    // All Time — use the user's account inception balance
-    if (!from) return accountSize;
-
-    if (!matched.length && !cashEvents.length) return accountSize;
-
+    const { from } = dateFilterRange;
     const realBalance = brokerStatus?.totalBalance;
-    if (realBalance != null) {
-      let sinceStartPnL = 0;
-      let sinceStartCash = 0;
+
+    // SnapTrade backwards calculation — works for every period including All Time
+    if (realBalance != null && (matched.length || cashEvents.length)) {
+      let periodPnL = 0;
+      let periodCash = 0;
       for (const t of matched) {
-        if (new Date(t.sellDate) >= from) sinceStartPnL += t.pnl;
+        if (!from || new Date(t.sellDate) >= from) periodPnL += t.pnl;
       }
       for (const e of cashEvents) {
-        if (new Date(e.date) >= from) sinceStartCash += e.amount;
+        if (!from || new Date(e.date) >= from) periodCash += e.amount;
       }
-      return Math.round((realBalance - sinceStartPnL - sinceStartCash) * 100) / 100;
+      return Math.round((realBalance - periodPnL - periodCash) * 100) / 100;
     }
 
+    // No broker — All Time uses accountSize directly
+    if (!from || (!matched.length && !cashEvents.length)) return accountSize;
+
+    // No broker — filtered period: build forward from accountSize
     let running = accountSize;
     const sorted = [...matched].sort((a, b) => new Date(a.sellDate) - new Date(b.sellDate));
     for (const t of sorted) {
@@ -2030,6 +2031,8 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
             <label style={{ fontSize: 10, color: C.textMuted }}>{isFiltered ? "Period start" : "Start"}</label>
             {isFiltered ? (
               <input type="number" value={startOverride !== null ? startOverride : effectiveStartSize} onChange={e => { const v = Number(e.target.value); setStartOverride(v > 0 ? v : null); }} onBlur={() => { if (startOverride !== null && startOverride <= 0) setStartOverride(null); }} style={{ width: 85, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.cyan}44`, borderRadius: 6, color: C.cyan, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
+            ) : brokerStatus?.totalBalance != null ? (
+              <span style={{ fontSize: 11, color: C.cyan, minWidth: 50 }}>${computedPeriodStart.toLocaleString()}</span>
             ) : (
               <input type="number" value={accountSizeInput} onChange={e => { setAccountSizeInput(e.target.value); const v = Number(e.target.value); if (v > 0) setAccountSize(v); }} onBlur={() => { if (!Number(accountSizeInput)) { setAccountSizeInput(String(accountSize)); } }} style={{ width: 72, padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`, borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "'Inter', -apple-system, sans-serif", outline: "none" }} />
             )}
