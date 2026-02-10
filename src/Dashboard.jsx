@@ -1745,6 +1745,48 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: C.text }}>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
+      {/* ── Date Filter Bar ── */}
+      {loaded && (
+        <div style={{ padding: "16px 16px 0", maxWidth: 1320, margin: "0 auto" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", background: C.surface, borderRadius: 12, padding: "8px 12px", border: `0.5px solid ${C.border}` }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, letterSpacing: "0.05em", textTransform: "uppercase", marginRight: 4 }}>Period</span>
+            {[
+              { id: "all", label: "All Time" },
+              { id: "ytd", label: "YTD" },
+              { id: "12mo", label: "1 Year" },
+              { id: "3yr", label: "3 Years" },
+              { id: "custom", label: "Custom" },
+            ].map(f => (
+              <button key={f.id} onClick={() => setDateFilter(f.id)} style={{
+                padding: "6px 14px", border: `0.5px solid ${dateFilter === f.id ? C.accent : "transparent"}`, borderRadius: 8, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit",
+                background: dateFilter === f.id ? `${C.accent}18` : "transparent",
+                color: dateFilter === f.id ? C.accent : C.textDim,
+                transition: "all 0.2s",
+              }}>{f.label}</button>
+            ))}
+            {dateFilter === "custom" && (
+              <>
+                <input type="date" value={customDateFrom} onChange={e => setCustomDateFrom(e.target.value)} style={{
+                  padding: "5px 8px", background: "transparent", border: `0.5px solid ${C.border}`,
+                  borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "inherit", outline: "none",
+                  colorScheme: "dark",
+                }} />
+                <span style={{ fontSize: 11, color: C.textDim }}>to</span>
+                <input type="date" value={customDateTo} onChange={e => setCustomDateTo(e.target.value)} style={{
+                  padding: "5px 8px", background: "transparent", border: `0.5px solid ${C.border}`,
+                  borderRadius: 6, color: C.text, fontSize: 11, fontFamily: "inherit", outline: "none",
+                  colorScheme: "dark",
+                }} />
+              </>
+            )}
+            <span style={{ marginLeft: "auto", fontSize: 11, color: dateFilter !== "all" ? C.accent : C.textDim, fontWeight: 500 }}>
+              {dateFilter !== "all" ? `Showing ${filteredMatched.length} of ${matched.length} trades` : `${matched.length} trades`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ── Hero summary ── */}
       {stats && (
         <div style={{ padding: "28px 16px 0", maxWidth: 1320, margin: "0 auto" }}>
@@ -1790,39 +1832,6 @@ export default function TradeDashboard({ savedTrades, onSaveTrades, onClearTrade
               transition: "all 0.2s ease", letterSpacing: "-0.01em",
             }}>{tab.label}</button>
           ))}
-        </div>
-        {/* Date Filter */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3 }}>
-          {[
-            { id: "all", label: "All" },
-            { id: "ytd", label: "YTD" },
-            { id: "12mo", label: "12M" },
-            { id: "3yr", label: "3Y" },
-            { id: "custom", label: "Custom" },
-          ].map(f => (
-            <button key={f.id} onClick={() => setDateFilter(f.id)} style={{
-              padding: "5px 12px", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit",
-              background: dateFilter === f.id ? "rgba(255,255,255,0.1)" : "transparent",
-              color: dateFilter === f.id ? C.text : C.textMuted,
-              transition: "all 0.2s",
-            }}>{f.label}</button>
-          ))}
-          {dateFilter === "custom" && (
-            <>
-              <input type="date" value={customDateFrom} onChange={e => setCustomDateFrom(e.target.value)} style={{
-                padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`,
-                borderRadius: 6, color: C.text, fontSize: 10, fontFamily: "inherit", outline: "none",
-                colorScheme: "dark", width: 110,
-              }} />
-              <span style={{ fontSize: 10, color: C.textDim }}>to</span>
-              <input type="date" value={customDateTo} onChange={e => setCustomDateTo(e.target.value)} style={{
-                padding: "4px 6px", background: "transparent", border: `0.5px solid ${C.border}`,
-                borderRadius: 6, color: C.text, fontSize: 10, fontFamily: "inherit", outline: "none",
-                colorScheme: "dark", width: 110,
-              }} />
-            </>
-          )}
         </div>
         {/* Controls */}
         <div className="dash-controls" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
