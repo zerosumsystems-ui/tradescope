@@ -1270,6 +1270,17 @@ export default function TradeDashboard({ savedTrades, savedCashEvents, onSaveTra
   const [accountSize, setAccountSize] = useState(initialSettings?.account_size || 100000);
   const [accountSizeInput, setAccountSizeInput] = useState(String(initialSettings?.account_size || 100000));
   const [startOverride, setStartOverride] = useState(null); // manual override for filtered period start
+
+  // Sync when initialSettings loads asynchronously (the useState default only fires once on mount)
+  useEffect(() => {
+    if (initialSettings?.account_size) {
+      setAccountSize(initialSettings.account_size);
+      setAccountSizeInput(String(initialSettings.account_size));
+    }
+    if (initialSettings?.risk_percent) {
+      setRiskPct(initialSettings.risk_percent);
+    }
+  }, [initialSettings?.account_size, initialSettings?.risk_percent]);
   const [saveStatus, setSaveStatus] = useState("");
   const [strategyTags, setStrategyTags] = useState(() => {
     try { return JSON.parse(localStorage.getItem("aiedge_strategies") || localStorage.getItem("tradescope_strategies") || "{}"); } catch { return {}; }
