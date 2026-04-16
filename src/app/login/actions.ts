@@ -37,11 +37,15 @@ export async function sendMagicLink(
   const origin = `${proto}://${host}`
 
   const supabase = await createClient()
+  // The email template uses {{ .RedirectTo }} + {{ .TokenHash }} to build
+  // a /auth/confirm link — see the Supabase email template config. This
+  // avoids the PKCE flow's browser-cookie requirement, which breaks on
+  // iOS Mail / Gmail app where link clicks open in a separate cookie jar.
   const { error } = await supabase.auth.signInWithOtp({
     email: rawEmail,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}`,
     },
   })
 
