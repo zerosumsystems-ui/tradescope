@@ -21,10 +21,21 @@ const EMPTY_PAYLOAD: ScanPayload = {
   nextScan: '',
 }
 
+// Module-level cache — persists across warm invocations on the same
+// serverless instance. Scanner POSTs every 5 min which keeps the
+// function warm, so GET from the browser hits the same instance.
+let cachedPayload: ScanPayload | null = null
+
 export async function GET() {
+  // 1. Try in-memory cache first (fastest, works on warm instances)
+  if (cachedPayload) {
+    return Response.json(cachedPayload, { headers: CORS_HEADERS })
+  }
+  // 2. Fall back to /tmp file (works within same instance lifecycle)
   try {
     const raw = await readFile(SCAN_FILE, 'utf-8')
     const payload: ScanPayload = JSON.parse(raw)
+    cachedPayload = payload // warm the cache
     return Response.json(payload, { headers: CORS_HEADERS })
   } catch (err: unknown) {
     const code = (err as NodeJS.ErrnoException).code
@@ -39,11 +50,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const payload: ScanPayload = await request.json()
+    // Write to both in-memory cache and file
+    cachedPayload = payload
     await writeFile(SCAN_FILE, JSON.stringify(payload), 'utf-8')
-    return Response.json({ ok: true }, { status: 200 })
+    return Response.json({ ok: true }, { status: 200, headers: CORS_HEADERS })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    return Response.json({ error: message }, { status: 500 })
+    return Response.json({ error: message }, { status: 500, headers: CORS_HEADERS })
   }
 }
 
