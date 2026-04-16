@@ -47,45 +47,61 @@ export function TradeCard({ trade }: { trade: TradeRead }) {
 
   return (
     <details className="bg-surface border border-border rounded-lg mb-2 overflow-hidden group hover:border-border-hover hover:bg-surface-hover">
-      <summary className="list-none cursor-pointer p-3 flex items-center gap-3 select-none [&::-webkit-details-marker]:hidden">
-        {/* Ticker + date */}
-        <div className="min-w-[80px]">
-          <div className="text-base font-bold tracking-tight">{ticker}</div>
-          <div className="text-[11px] text-sub">{date}</div>
+      <summary className="list-none cursor-pointer p-3 select-none [&::-webkit-details-marker]:hidden">
+        {/* Desktop: single row */}
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="min-w-[80px]">
+            <div className="text-base font-bold tracking-tight">{ticker}</div>
+            <div className="text-[11px] text-sub">{date}</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-text truncate">{formatPhase(phaseBrooks)}</div>
+            <div className="text-[11px] text-sub truncate">{formatSetup(setupBrooks)}</div>
+          </div>
+          <div className="text-center w-12">
+            <div className="text-sm font-bold text-text">{qualityScore.toFixed(1)}</div>
+            <div className="text-[9px] text-sub uppercase tracking-wide">QTY</div>
+          </div>
+          <div className="text-center w-16">
+            <div className="text-xs text-text tabular-nums">{probabilityBrooks}%</div>
+            <div className="text-[11px] text-sub tabular-nums">{rrBrooks.toFixed(1)} R:R</div>
+          </div>
+          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide whitespace-nowrap border ${DECISION_STYLES[decisionBrooks]}`}>
+            {decisionBrooks}
+          </span>
+          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide whitespace-nowrap border ${AGREEMENT_STYLES[agreementVsScanner]}`}>
+            {agreementVsScanner}
+          </span>
+          <span className={`text-[11px] font-medium w-14 text-center ${OUTCOME_STYLES[outcome] || 'text-sub'}`}>
+            {outcome === 'no_trade' ? 'no trade' : outcome}
+          </span>
         </div>
 
-        {/* Phase + setup */}
-        <div className="flex-1 min-w-0">
-          <div className="text-xs text-text truncate">{formatPhase(phaseBrooks)}</div>
-          <div className="text-[11px] text-sub">{formatSetup(setupBrooks)}</div>
+        {/* Mobile: two rows */}
+        <div className="sm:hidden space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold tracking-tight">{ticker}</span>
+              <span className="text-[11px] text-sub">{date}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide border ${DECISION_STYLES[decisionBrooks]}`}>
+                {decisionBrooks}
+              </span>
+              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide border ${AGREEMENT_STYLES[agreementVsScanner]}`}>
+                {agreementVsScanner}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-sub truncate mr-2">{formatPhase(phaseBrooks)} / {formatSetup(setupBrooks)}</span>
+            <div className="flex items-center gap-2 shrink-0 tabular-nums">
+              <span className="text-text font-semibold">{qualityScore.toFixed(1)}</span>
+              <span className="text-sub">{probabilityBrooks}%</span>
+              <span className="text-sub">{rrBrooks.toFixed(1)}R</span>
+            </div>
+          </div>
         </div>
-
-        {/* Quality score */}
-        <div className="text-center w-12">
-          <div className="text-sm font-bold text-text">{qualityScore.toFixed(1)}</div>
-          <div className="text-[9px] text-sub uppercase tracking-wide">QTY</div>
-        </div>
-
-        {/* Probability + R:R */}
-        <div className="text-center w-16">
-          <div className="text-xs text-text tabular-nums">{probabilityBrooks}%</div>
-          <div className="text-[11px] text-sub tabular-nums">{rrBrooks.toFixed(1)} R:R</div>
-        </div>
-
-        {/* Decision badge */}
-        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide whitespace-nowrap border ${DECISION_STYLES[decisionBrooks]}`}>
-          {decisionBrooks}
-        </span>
-
-        {/* Agreement badge */}
-        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide whitespace-nowrap border ${AGREEMENT_STYLES[agreementVsScanner]}`}>
-          {agreementVsScanner}
-        </span>
-
-        {/* Outcome */}
-        <span className={`text-[11px] font-medium w-14 text-center ${OUTCOME_STYLES[outcome] || 'text-sub'}`}>
-          {outcome === 'no_trade' ? 'no trade' : outcome}
-        </span>
       </summary>
 
       {/* Expanded content */}
@@ -101,7 +117,7 @@ export function TradeCard({ trade }: { trade: TradeRead }) {
         {/* Scanner comparison */}
         <div className="bg-bg rounded-lg p-3">
           <div className="text-[10px] uppercase tracking-wider text-sub mb-2 font-semibold">Scanner vs Brooks</div>
-          <div className="flex items-center gap-4 text-xs mb-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs mb-2">
             <span className="text-sub">Scanner: <span className="text-text font-medium">#{rankScanner}</span> rank, <span className="text-text font-medium">{urgScanner.toFixed(1)}</span> URG, <span className="text-text font-medium">{signalScanner}</span></span>
           </div>
           <p className="text-xs text-text/80 leading-relaxed">{agreementReason}</p>
