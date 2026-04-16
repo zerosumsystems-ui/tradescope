@@ -208,3 +208,136 @@ export interface JournalPayload {
   syncedAt: string
   entryCount: number
 }
+
+/** Review (Brooks Audit) types */
+
+export type DivergenceClass = "AGREE" | "MINOR" | "MAJOR" | "INVERTED"
+
+export interface AuditSymbolRow {
+  rankScanner: number
+  rankBrooks: number
+  rankDelta: number
+  ticker: string
+  urgScanner: number
+  brooksQualityScore: number
+  signalScanner: string
+  decisionBrooks: TradeDecision
+  phaseScanner: string
+  phaseBrooks: string
+  alwaysInScanner: string
+  alwaysInBrooks: string
+  probabilityBrooks: number
+  rrBrooks: number
+  agreementVsScanner: AgreementLevel
+  agreementReason: string
+  divergenceClass: DivergenceClass
+  annotatedChartBase64?: string
+  readMarkdown?: string
+}
+
+export interface AuditFailureMode {
+  id: string
+  title: string
+  affectedTickers: string[]
+  fileCitation: string
+  description: string
+}
+
+export interface AuditTop5BrooksRow {
+  ticker: string
+  rankScanner: number
+  signalScanner: string
+  decisionBrooks: TradeDecision
+  probability: number
+  rr: number
+}
+
+export interface AuditTop5ScannerRow {
+  ticker: string
+  urgScanner: number
+  signalScanner: string
+  decisionBrooks: TradeDecision
+  brooksQualityScore: number
+  agreement: AgreementLevel
+}
+
+export interface AuditDistribution<T extends string> {
+  class: T
+  count: number
+  pct: number
+}
+
+export interface AuditSummary {
+  auditDate: string
+  auditTime: string
+  auditDir: string
+  symbolCount: number
+  agreementDistribution: AuditDistribution<AgreementLevel>[]
+  divergenceDistribution: AuditDistribution<DivergenceClass>[]
+  brooksTop5: AuditTop5BrooksRow[]
+  scannerTop5: AuditTop5ScannerRow[]
+  failureModes: AuditFailureMode[]
+  summaryMarkdown: string
+  methodologyCritiqueMarkdown: string
+}
+
+export interface AuditHistoryEntry {
+  auditDir: string
+  auditDate: string
+  auditTime: string
+  symbolCount: number
+}
+
+export interface AuditPayload {
+  latest: AuditSummary | null
+  symbols: AuditSymbolRow[]
+  history: AuditHistoryEntry[]
+  syncedAt: string
+}
+
+/** Progress (Self-Eval Calibration) types */
+
+export type CategoryScore = "AGREE" | "PARTIAL" | "MISS"
+
+export interface ScoreboardEntry {
+  date: string
+  figureNumber: string
+  book: string
+  phase: CategoryScore
+  alwaysIn: CategoryScore
+  strength: CategoryScore
+  setup: CategoryScore
+  decision: CategoryScore
+  totalAgree: number
+}
+
+export interface Lesson {
+  id: string
+  title: string
+  fromFigure: string
+  fromDate: string
+  patternMissed: string
+  futureRule: string
+}
+
+export interface CategoryCount {
+  agree: number
+  partial: number
+  miss: number
+}
+
+export interface ProgressPayload {
+  scoreboard: ScoreboardEntry[]
+  lessons: Lesson[]
+  figuresCompleted: number
+  figuresTotal: number
+  nextQueue: string[]
+  categoryAccuracy: {
+    phase: CategoryCount
+    alwaysIn: CategoryCount
+    strength: CategoryCount
+    setup: CategoryCount
+    decision: CategoryCount
+  }
+  syncedAt: string
+}
