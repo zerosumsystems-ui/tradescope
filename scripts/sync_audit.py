@@ -2,7 +2,7 @@
 """
 Sync Brooks audits to aiedge.trade.
 
-Reads from ~/brooks_audit/<date_time>/:
+Reads from ~/code/aiedge/audits/<date_time>/:
   - SUMMARY_REPORT.md
   - audit/ranking_comparison.csv
   - audit/reads/*.md
@@ -26,7 +26,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 DEFAULT_URL = "http://localhost:3000"
-AUDIT_BASE = Path.home() / "brooks_audit"
+AUDIT_BASE = Path.home() / "code" / "aiedge" / "audits"
 
 
 def parse_dir_name(name: str) -> tuple[str, str]:
@@ -275,7 +275,7 @@ def sync(base_url: str):
     base_url = base_url.rstrip("/")
     dirs = list_audit_dirs()
     if not dirs:
-        print("No audit directories found under ~/brooks_audit/")
+        print("No audit directories found under ~/code/aiedge/audits/")
         return
 
     latest = dirs[0]

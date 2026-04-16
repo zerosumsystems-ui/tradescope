@@ -82,7 +82,7 @@ export async function OPTIONS() {
 // ── Local dev filesystem fallback ────────────────────────────────────────────
 
 function loadFromFilesystem(): ProgressPayload | null {
-  const base = join(homedir(), 'brooks_self_eval')
+  const base = join(homedir(), 'code', 'aiedge', 'self-eval')
   if (!existsSync(base)) return null
 
   const scoreboard = loadScoreboard(join(base, 'scoreboard.csv'))

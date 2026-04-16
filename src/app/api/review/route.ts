@@ -79,7 +79,7 @@ export async function OPTIONS() {
 // ── Local dev filesystem fallback ────────────────────────────────────────────
 
 function loadFromFilesystem(): AuditPayload | null {
-  const base = join(homedir(), 'brooks_audit')
+  const base = join(homedir(), 'code', 'aiedge', 'audits')
   if (!existsSync(base)) return null
 
   const dirs = readdirSync(base)

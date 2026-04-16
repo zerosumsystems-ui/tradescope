@@ -74,7 +74,7 @@ export default function ProgressPage() {
           <div className="text-2xl mb-3 text-sub">No calibration data yet</div>
           <p className="text-sm text-sub">
             Run the self-eval loop at{' '}
-            <code className="text-teal/80 font-mono text-xs">~/brooks_self_eval/</code>{' '}
+            <code className="text-teal/80 font-mono text-xs">~/code/aiedge/self-eval/</code>{' '}
             or sync via{' '}
             <code className="text-teal/80 font-mono text-xs">
               python3 scripts/sync_progress.py

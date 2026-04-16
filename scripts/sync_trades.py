@@ -18,8 +18,8 @@ from urllib.request import Request, urlopen
 DEFAULT_URL = "http://localhost:3000"
 
 # Data sources
-AUDIT_BASE = Path.home() / "brooks_audit"
-SELF_EVAL_DIR = Path.home() / "brooks_self_eval"
+AUDIT_BASE = Path.home() / "code" / "aiedge" / "audits"
+SELF_EVAL_DIR = Path.home() / "code" / "aiedge" / "self-eval"
 
 
 def find_latest_audit() -> Path | None:

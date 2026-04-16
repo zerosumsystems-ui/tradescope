@@ -2,7 +2,7 @@
 """
 Sync self-eval calibration progress to aiedge.trade.
 
-Reads from ~/brooks_self_eval/:
+Reads from ~/code/aiedge/self-eval/:
   - scoreboard.csv (per-figure calibration scores)
   - lessons.md (accumulated lessons)
   - done_figures.txt (figures completed)
@@ -25,7 +25,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 
 DEFAULT_URL = "http://localhost:3000"
-SELF_EVAL_DIR = Path.home() / "brooks_self_eval"
+SELF_EVAL_DIR = Path.home() / "code" / "aiedge" / "self-eval"
 
 
 def load_scoreboard() -> list[dict]:

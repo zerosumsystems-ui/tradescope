@@ -53,7 +53,7 @@ export default function ReviewPage() {
           <div className="text-2xl mb-3 text-sub">No audit data yet</div>
           <p className="text-sm text-sub">
             Run a Brooks audit into{' '}
-            <code className="text-teal/80 font-mono text-xs">~/brooks_audit/</code>{' '}
+            <code className="text-teal/80 font-mono text-xs">~/code/aiedge/audits/</code>{' '}
             or sync via{' '}
             <code className="text-teal/80 font-mono text-xs">
               python3 scripts/sync_audit.py
