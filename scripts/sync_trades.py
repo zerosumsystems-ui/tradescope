@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _sync_auth import add_auth_header  # noqa: E402
+
 DEFAULT_URL = "http://localhost:3000"
 
 # Data sources
@@ -207,6 +210,7 @@ def post_json(url: str, payload: dict):
     data = json.dumps(payload).encode("utf-8")
     req = Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
+    add_auth_header(req)
 
     with urlopen(req) as resp:
         return json.loads(resp.read())

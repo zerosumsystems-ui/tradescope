@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _sync_auth import add_auth_header  # noqa: E402
+
 VAULT_DIR = Path.home() / "Claude Vault"
 DEFAULT_URL = "http://localhost:3000"
 
@@ -95,6 +98,7 @@ def sync(base_url: str):
 
     req = Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
+    add_auth_header(req)
 
     print(f"Syncing {len(notes)} notes to {url}...")
 

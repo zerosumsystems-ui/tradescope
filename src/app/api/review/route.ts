@@ -15,6 +15,8 @@ import type {
   DivergenceClass,
   TradeDecision,
 } from '@/lib/types'
+import { requireSyncSecret } from '@/lib/auth/sync-secret'
+import { requireSession } from '@/lib/auth/require-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +37,9 @@ const EMPTY_PAYLOAD: AuditPayload = {
 
 let cachedPayload: AuditPayload | null = null
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unauth = await requireSession(request)
+  if (unauth) return unauth
   if (cachedPayload) {
     return Response.json(cachedPayload, { headers: CORS_HEADERS })
   }
@@ -61,6 +65,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const unauth = requireSyncSecret(request)
+  if (unauth) return unauth
   try {
     const payload: AuditPayload = await request.json()
     cachedPayload = payload

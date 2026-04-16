@@ -18,6 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _sync_auth import add_auth_header  # noqa: E402
+
 HISTORY_DIR = Path.home() / "aiedge-history"
 DEFAULT_URL = "http://localhost:3000"
 
@@ -30,7 +33,9 @@ def capture(base_url: str):
     print(f"Fetching current scan from {scan_url}...")
 
     try:
-        with urlopen(scan_url) as resp:
+        scan_req = Request(scan_url)
+        add_auth_header(scan_req)
+        with urlopen(scan_req) as resp:
             payload = json.loads(resp.read())
     except Exception as e:
         print(f"ERROR fetching scan: {e}")
@@ -60,6 +65,7 @@ def capture(base_url: str):
     data = json.dumps(snapshot).encode("utf-8")
     req = Request(history_url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
+    add_auth_header(req)
 
     try:
         with urlopen(req) as resp:

@@ -14,15 +14,22 @@ const NAV_ITEMS = [
   { href: '/knowledge', label: 'Knowledge' },
 ]
 
-export function SiteNav() {
+type Props = { userEmail: string | null }
+
+export function SiteNav({ userEmail }: Props) {
   const pathname = usePathname()
+
+  // Hide the nav on the login flow — those pages render standalone.
+  if (pathname.startsWith('/login') || pathname.startsWith('/auth/')) {
+    return null
+  }
 
   return (
     <nav className="h-12 flex items-center px-4 border-b border-border bg-surface/80 backdrop-blur-sm shrink-0 sticky top-0 z-40">
       <Link href="/" className="text-sm font-bold text-teal tracking-tight mr-4 shrink-0">
         AI Edge
       </Link>
-      <div className="flex gap-1 overflow-x-auto scrollbar-none">
+      <div className="flex gap-1 overflow-x-auto scrollbar-none flex-1">
         {NAV_ITEMS.map((item) => {
           const active =
             item.href === '/'
@@ -44,6 +51,29 @@ export function SiteNav() {
           )
         })}
       </div>
+
+      {userEmail ? (
+        <div className="flex items-center gap-2 ml-3 shrink-0">
+          <span className="text-xs text-sub hidden sm:inline max-w-[14ch] truncate" title={userEmail}>
+            {userEmail}
+          </span>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="text-xs text-sub hover:text-text px-2 py-1 rounded hover:bg-bg"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      ) : (
+        <Link
+          href="/login"
+          className="text-xs text-sub hover:text-text ml-3 shrink-0 px-2 py-1 rounded hover:bg-bg"
+        >
+          Sign in
+        </Link>
+      )}
     </nav>
   )
 }

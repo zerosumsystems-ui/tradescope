@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'fs/promises'
 import type { VaultPayload } from '@/lib/types'
+import { requireSyncSecret } from '@/lib/auth/sync-secret'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const unauth = requireSyncSecret(request)
+  if (unauth) return unauth
   try {
     const payload: VaultPayload = await request.json()
     cachedPayload = payload
