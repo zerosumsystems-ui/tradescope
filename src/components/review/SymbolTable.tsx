@@ -9,6 +9,7 @@ import type {
 } from '@/lib/types'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { LightweightChart } from '@/components/charts/LightweightChart'
 
 const DECISION_STYLES: Record<TradeDecision, string> = {
   BUY: 'bg-teal/[.18] text-teal border-teal/35',
@@ -231,17 +232,12 @@ function SymbolRow({ row }: { row: AuditSymbolRow }) {
                 </div>
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {row.annotatedChartBase64 && (
+                {row.chart && row.chart.bars && row.chart.bars.length > 0 && (
                   <div>
                     <div className="text-[10px] uppercase tracking-wider text-sub font-semibold mb-1.5">
                       Annotated chart
                     </div>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={row.annotatedChartBase64}
-                      alt={`${row.ticker} annotated`}
-                      className="rounded-lg border border-border w-full"
-                    />
+                    <LightweightChart chart={row.chart} height={380} />
                   </div>
                 )}
                 {row.readMarkdown && (

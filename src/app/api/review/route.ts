@@ -182,31 +182,18 @@ function buildSymbols(dirPath: string): AuditSymbolRow[] {
   const rows = parseRankingCsv(csvFile)
 
   const readsDir = join(dirPath, 'audit', 'reads')
-  const chartsDir = join(dirPath, 'audit', 'charts_annotated')
-
   const readFiles = existsSync(readsDir) ? readdirSync(readsDir) : []
-  const chartFiles = existsSync(chartsDir) ? readdirSync(chartsDir) : []
 
+  // Note: interactive chart bars come from `python3 scripts/sync_audit.py`
+  // which fetches OHLC via Databento and POSTs the full payload. The dev
+  // filesystem fallback only attaches the narrative markdown.
   return rows.map((row) => {
     const readFile = readFiles.find((f) => f.includes(`_${row.ticker}.md`))
-    const chartFile = chartFiles.find((f) => f.includes(`_${row.ticker}_brooks.png`))
-
     let readMarkdown: string | undefined
     if (readFile) {
       readMarkdown = readFileSync(join(readsDir, readFile), 'utf-8')
     }
-
-    let annotatedChartBase64: string | undefined
-    if (chartFile) {
-      const bytes = readFileSync(join(chartsDir, chartFile))
-      annotatedChartBase64 = `data:image/png;base64,${bytes.toString('base64')}`
-    }
-
-    return {
-      ...row,
-      readMarkdown,
-      annotatedChartBase64,
-    }
+    return { ...row, readMarkdown }
   })
 }
 

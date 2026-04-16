@@ -1,3 +1,51 @@
+/** Chart types — interactive candles (Phase 6, replaces base64 PNGs) */
+
+export interface Bar {
+  t: number         // unix seconds (ET session)
+  o: number
+  h: number
+  l: number
+  c: number
+  v?: number        // optional volume
+}
+
+export interface KeyLevels {
+  priorClose?: number
+  priorDayHigh?: number
+  priorDayLow?: number
+  overnightHigh?: number
+  overnightLow?: number
+  premarketHigh?: number
+  premarketLow?: number
+}
+
+export type SignalDirection = "long" | "short"
+
+export interface ChartAnnotations {
+  phaseLabel?: string                   // "bear_spike"
+  alwaysIn?: string                     // "short_moderate"
+  strength?: string                     // "short_4"
+  signalBar?: { time: number; direction: SignalDirection }
+  trendline?: {
+    from: { t: number; price: number }
+    to: { t: number; price: number }
+  }
+  stopPrice?: number
+  targetPrice?: number
+  verdict?: { decision: string; probability: number; rr: number }
+  agreement?: "AGREE" | "PARTIAL" | "MINOR" | "MAJOR" | "DISAGREE" | "INVERTED"
+  adrMultiple?: number
+}
+
+export type ChartTimeframe = "5min" | "15min" | "1h" | "daily"
+
+export interface ChartData {
+  bars: Bar[]
+  timeframe: ChartTimeframe
+  keyLevels?: KeyLevels
+  annotations?: ChartAnnotations
+}
+
 /** Vault / Knowledge base types */
 
 export interface VaultNote {
@@ -70,7 +118,7 @@ export interface ScanResult {
   components: ComponentScores
   warning?: string
   summary: string
-  chartBase64?: string  // base64 PNG (data:image/png;base64,...)
+  chart?: ChartData    // interactive OHLC + key levels (Phase 6)
 }
 
 export interface ScanPayload {
@@ -179,7 +227,7 @@ export interface TradeRead {
 
   // Outcome (added post-hoc)
   outcome: TradeOutcome
-  chartBase64?: string
+  chart?: ChartData
 }
 
 export interface TradesPayload {
@@ -231,7 +279,7 @@ export interface AuditSymbolRow {
   agreementVsScanner: AgreementLevel
   agreementReason: string
   divergenceClass: DivergenceClass
-  annotatedChartBase64?: string
+  chart?: ChartData
   readMarkdown?: string
 }
 

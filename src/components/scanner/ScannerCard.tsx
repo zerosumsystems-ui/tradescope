@@ -4,6 +4,7 @@ import type { ScanResult } from "@/lib/types"
 import { ScoreBar } from "./ScoreBar"
 import { ComponentTiles } from "./ComponentTiles"
 import { SignalBadge } from "./SignalBadge"
+import { LightweightChart } from "@/components/charts/LightweightChart"
 
 const ADR_TIER_STYLES: Record<string, string> = {
   cold: "text-sub bg-transparent",
@@ -25,7 +26,7 @@ function formatDayType(dt: string): string {
 
 export function ScannerCard({ result }: { result: ScanResult }) {
   const { ticker, rank, urgency, uncertainty, signal, dayType, cyclePhase, fillStatus,
-    adr, adrRatio, adrMult, adrTier, movement, components, warning, summary, chartBase64 } = result
+    adr, adrRatio, adrMult, adrTier, movement, components, warning, summary, chart } = result
 
   const movementClass = movement === "NEW" ? "text-teal" :
     movement.startsWith("+") ? "text-teal font-semibold" :
@@ -102,9 +103,9 @@ export function ScannerCard({ result }: { result: ScanResult }) {
         )}
 
         {/* Chart */}
-        {chartBase64 ? (
-          <div className="relative px-3 pb-3 bg-[#111]">
-            <img src={chartBase64} alt={`${ticker} chart`} className="w-full h-auto rounded" />
+        {chart && chart.bars && chart.bars.length > 0 ? (
+          <div className="px-3 pb-3">
+            <LightweightChart chart={chart} height={260} compact />
           </div>
         ) : (
           <div className="py-4 px-3 text-xs text-sub text-center">No chart available</div>

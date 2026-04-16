@@ -17,6 +17,7 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _sync_auth import add_auth_header  # noqa: E402
+from _chart_data import build_charts_for_audit, parse_audit_dir_name  # noqa: E402
 
 DEFAULT_URL = "http://localhost:3000"
 
@@ -92,6 +93,17 @@ def load_trades_from_audit(audit_dir: Path) -> list[dict]:
                 ticker = match.group(1)
                 narratives[ticker] = extract_narrative(content)
 
+    # Build interactive chart data for every ticker (shared with sync_audit.py).
+    _audit_date, audit_time_hm = parse_audit_dir_name(audit_dir.name)
+    reads_by_ticker = {rec["ticker"]: rec for rec in parsed}
+    tickers = [rec["ticker"] for rec in parsed]
+    try:
+        chart_map = build_charts_for_audit(tickers, _audit_date, audit_time_hm, reads_by_ticker)
+        print(f"  built interactive chart data for {len(chart_map)}/{len(tickers)} trades")
+    except Exception as e:
+        print(f"  warn: chart build failed: {e}")
+        chart_map = {}
+
     trades = []
     for rec in parsed:
         ticker = rec["ticker"]
@@ -125,6 +137,9 @@ def load_trades_from_audit(audit_dir: Path) -> list[dict]:
         hints = rec.get("annotation_hints", {})
         if isinstance(hints, dict):
             trade["annotationNotes"] = hints.get("notes", "")
+
+        if ticker in chart_map:
+            trade["chart"] = chart_map[ticker]
 
         trades.append(trade)
 

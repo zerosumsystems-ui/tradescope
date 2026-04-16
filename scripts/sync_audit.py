@@ -16,7 +16,6 @@ Usage:
     python3 scripts/sync_audit.py https://www.aiedge.trade  # production
 """
 
-import base64
 import csv
 import json
 import re
@@ -27,6 +26,7 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _sync_auth import add_auth_header  # noqa: E402
+from _chart_data import build_charts_for_audit, parse_audit_dir_name  # noqa: E402
 
 DEFAULT_URL = "http://localhost:3000"
 AUDIT_BASE = Path.home() / "code" / "aiedge" / "audits"
@@ -83,29 +83,40 @@ def parse_ranking_csv(path: Path) -> list[dict]:
 
 def attach_reads_and_charts(symbols: list[dict], audit_dir: Path) -> None:
     reads_dir = audit_dir / "audit" / "reads"
-    charts_dir = audit_dir / "audit" / "charts_annotated"
 
-    read_map = {}
+    read_map: dict[str, str] = {}
     if reads_dir.is_dir():
         for f in reads_dir.glob("*.md"):
             m = re.match(r"\d+_([A-Z0-9]+)\.md", f.name)
             if m:
                 read_map[m.group(1)] = f.read_text(encoding="utf-8")
 
-    chart_map = {}
-    if charts_dir.is_dir():
-        for f in charts_dir.glob("*.png"):
-            m = re.match(r"\d+_([A-Z0-9]+)_brooks\.png", f.name)
-            if m:
-                b = base64.b64encode(f.read_bytes()).decode("ascii")
-                chart_map[m.group(1)] = f"data:image/png;base64,{b}"
+    # Interactive chart data — bars + annotations from reads_parsed.json
+    reads_parsed_file = audit_dir / "audit" / "reads_parsed.json"
+    reads_by_ticker: dict[str, dict] = {}
+    if reads_parsed_file.exists():
+        try:
+            parsed = json.load(reads_parsed_file.open())
+            reads_by_ticker = {r["ticker"]: r for r in parsed}
+        except Exception as e:
+            print(f"  warn: failed to load reads_parsed.json: {e}")
+
+    date, time_hm = parse_audit_dir_name(audit_dir.name)
+    tickers = [s["ticker"] for s in symbols]
+    chart_map: dict[str, dict] = {}
+    if date and reads_by_ticker:
+        try:
+            chart_map = build_charts_for_audit(tickers, date, time_hm, reads_by_ticker)
+            print(f"  built interactive chart data for {len(chart_map)}/{len(tickers)} tickers")
+        except Exception as e:
+            print(f"  warn: chart build failed: {e}")
 
     for sym in symbols:
         t = sym["ticker"]
         if t in read_map:
             sym["readMarkdown"] = read_map[t]
         if t in chart_map:
-            sym["annotatedChartBase64"] = chart_map[t]
+            sym["chart"] = chart_map[t]
 
 
 def compute_agreement_distribution(rows: list[dict]) -> list[dict]:

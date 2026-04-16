@@ -3,6 +3,7 @@
 import type { TradeRead, TradeDecision, AgreementLevel } from '@/lib/types'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { LightweightChart } from '@/components/charts/LightweightChart'
 
 const DECISION_STYLES: Record<TradeDecision, string> = {
   BUY: 'bg-teal/[.18] text-teal border-teal/35',
@@ -43,7 +44,7 @@ export function TradeCard({ trade }: { trade: TradeRead }) {
     phaseBrooks, alwaysInBrooks, strengthNet, setupBrooks,
     stopPrice, targetPrice, decisionBrooks, probabilityBrooks,
     rrBrooks, qualityScore, agreementVsScanner, agreementReason,
-    contextMarkdown, annotationNotes, outcome, chartBase64,
+    contextMarkdown, annotationNotes, outcome, chart,
   } = trade
 
   return (
@@ -157,14 +158,10 @@ export function TradeCard({ trade }: { trade: TradeRead }) {
         )}
 
         {/* Chart */}
-        {chartBase64 && (
+        {chart && chart.bars && chart.bars.length > 0 && (
           <div>
             <div className="text-[10px] uppercase tracking-wider text-sub mb-2 font-semibold">Chart</div>
-            <img
-              src={chartBase64.startsWith('data:') ? chartBase64 : `data:image/png;base64,${chartBase64}`}
-              alt={`${ticker} chart`}
-              className="rounded-lg border border-border w-full"
-            />
+            <LightweightChart chart={chart} height={420} />
           </div>
         )}
 
