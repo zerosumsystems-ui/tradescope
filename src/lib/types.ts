@@ -22,6 +22,19 @@ export interface VaultTree {
   note?: VaultNote
 }
 
+/** History types */
+
+export interface DailySnapshot {
+  date: string          // "2026-04-15"
+  payload: ScanPayload
+  capturedAt: string    // ISO timestamp
+}
+
+export interface HistoryPayload {
+  snapshots: DailySnapshot[]
+  syncedAt: string
+}
+
 /** Scanner data types — mirrors the live_scanner.py output format */
 
 export interface ComponentScores {
