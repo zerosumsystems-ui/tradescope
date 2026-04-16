@@ -56,10 +56,11 @@ export function SiteNav({ userEmail }: Props) {
         <div className="flex items-center gap-2 ml-3 shrink-0">
           <Link
             href="/account"
-            className="text-xs text-sub hover:text-text hidden sm:inline max-w-[14ch] truncate px-2 py-1 rounded hover:bg-bg"
+            className="text-xs text-sub hover:text-text max-w-[14ch] truncate px-2 py-1 rounded hover:bg-bg"
             title={`${userEmail} \u2014 account settings`}
           >
-            {userEmail}
+            <span className="hidden sm:inline">{userEmail}</span>
+            <span className="sm:hidden">Account</span>
           </Link>
           <form action="/auth/signout" method="post">
             <button
