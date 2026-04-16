@@ -1,3 +1,27 @@
+/** Vault / Knowledge base types */
+
+export interface VaultNote {
+  slug: string          // e.g. "brooks-pa/patterns/H2"
+  title: string         // extracted from first # heading
+  folder: string        // e.g. "Brooks PA/patterns"
+  filename: string      // e.g. "H2.md"
+  content: string       // raw markdown
+  wikiLinks: string[]   // extracted [[link]] targets
+}
+
+export interface VaultPayload {
+  notes: VaultNote[]
+  syncedAt: string      // ISO timestamp
+  noteCount: number
+}
+
+export interface VaultTree {
+  name: string
+  path: string
+  children?: VaultTree[]
+  note?: VaultNote
+}
+
 /** Scanner data types — mirrors the live_scanner.py output format */
 
 export interface ComponentScores {
