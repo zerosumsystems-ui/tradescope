@@ -23,6 +23,7 @@ export function LoginForm({ next, initialError }: Props) {
   const state = mode === 'magic' ? magicState : pwState
 
   if (mode === 'magic' && magicState.sent) {
+    const isSetup = magicState.intent === 'setup'
     return (
       <div className="text-center">
         <div className="w-10 h-10 rounded-full bg-teal/10 text-teal flex items-center justify-center mx-auto mb-4 text-lg">
@@ -33,7 +34,9 @@ export function LoginForm({ next, initialError }: Props) {
           We sent a sign-in link to <span className="text-text">{magicState.email}</span>.
         </div>
         <div className="text-xs text-sub mt-4">
-          The link opens this site signed in. You can close this tab.
+          {isSetup
+            ? 'After signing in, you\u2019ll land on your Account page to set a password.'
+            : 'The link opens this site signed in. You can close this tab.'}
         </div>
       </div>
     )
@@ -49,7 +52,24 @@ export function LoginForm({ next, initialError }: Props) {
             defaultValue={magicState.email ?? ''} placeholder="you@example.com" autoFocus />
           <input type="hidden" name="next" value={next} />
           {state.error && <div className="text-xs text-red">{state.error}</div>}
-          <Submit pending={magicPending} label="Send magic link" pendingLabel="Sending…" />
+          <button
+            type="submit"
+            name="intent"
+            value="signin"
+            disabled={magicPending}
+            className="mt-2 bg-teal text-bg font-medium text-sm py-2 rounded-[var(--radius)] hover:bg-teal/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {magicPending ? 'Sending…' : 'Send magic link'}
+          </button>
+          <button
+            type="submit"
+            name="intent"
+            value="setup"
+            disabled={magicPending}
+            className="text-xs text-sub hover:text-text py-1 disabled:opacity-50"
+          >
+            Set up a password for faster sign-in →
+          </button>
         </form>
       ) : (
         <form action={pwAction} className="flex flex-col gap-3">

@@ -10,6 +10,7 @@ export type LoginState = {
   sent?: boolean
   email?: string
   mode?: 'magic' | 'password'
+  intent?: 'signin' | 'setup'
 }
 
 /**
@@ -23,7 +24,12 @@ export async function sendMagicLink(
   formData: FormData
 ): Promise<LoginState> {
   const rawEmail = String(formData.get('email') ?? '').trim()
-  const next = String(formData.get('next') ?? '/') || '/'
+  // Two submit buttons share this action: the primary "Send magic link"
+  // uses the requested `next` (defaults /), while the "Set a password"
+  // button sets intent=setup to land the user on /account after sign-in.
+  const intent = String(formData.get('intent') ?? 'signin')
+  const requestedNext = String(formData.get('next') ?? '/') || '/'
+  const next = intent === 'setup' ? '/account' : requestedNext
 
   if (!rawEmail) return { error: 'Enter an email address.', mode: 'magic' }
   if (!isAllowed(rawEmail)) {
@@ -45,7 +51,12 @@ export async function sendMagicLink(
   })
 
   if (error) return { error: error.message, email: rawEmail, mode: 'magic' }
-  return { sent: true, email: rawEmail, mode: 'magic' }
+  return {
+    sent: true,
+    email: rawEmail,
+    mode: 'magic',
+    intent: intent === 'setup' ? 'setup' : 'signin',
+  }
 }
 
 /**
