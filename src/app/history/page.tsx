@@ -36,10 +36,16 @@ export default function HistoryPage() {
   if (dates.length === 0) {
     return (
       <div className="flex items-center justify-center h-[calc(100dvh-var(--nav-h))]">
-        <div className="text-center max-w-md">
+        <div className="text-center max-w-md px-4">
           <div className="text-2xl mb-3 text-sub">No history yet</div>
           <p className="text-sm text-sub">
-            End-of-day scan results will appear here automatically after each trading day.
+            End-of-day scan results live here. Capture today&apos;s with:
+          </p>
+          <pre className="text-[11px] bg-bg border border-border rounded p-3 mt-3 overflow-x-auto text-left">
+            python3 scripts/capture_eod.py https://www.aiedge.trade
+          </pre>
+          <p className="text-xs text-sub mt-3">
+            Or schedule it as a cron job for automatic nightly capture.
           </p>
         </div>
       </div>
@@ -47,7 +53,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-text mb-1">Scan History</h1>
       <p className="text-sm text-sub mb-6">{dates.length} trading days captured</p>
 

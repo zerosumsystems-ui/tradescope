@@ -37,7 +37,7 @@ export default function ProgressPage() {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-lg font-bold text-text mb-2">Learning Progress</h1>
         <p className="text-red text-sm">Failed to load: {error}</p>
       </div>
@@ -46,7 +46,7 @@ export default function ProgressPage() {
 
   if (!data) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-6">
         <div className="skeleton h-8 w-48 mb-2" />
         <div className="skeleton h-4 w-72 mb-6" />
         <div className="skeleton h-20 mb-4" />
@@ -87,7 +87,7 @@ export default function ProgressPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-text">Learning Progress</h1>

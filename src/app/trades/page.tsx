@@ -47,7 +47,7 @@ export default function TradesPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-6">
         <div className="skeleton h-8 w-48 mb-2" />
         <div className="skeleton h-4 w-72 mb-6" />
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
@@ -75,7 +75,7 @@ export default function TradesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-text mb-1">Trade Catalog</h1>
       <p className="text-sm text-sub mb-4">Brooks reads with scanner comparison</p>
 

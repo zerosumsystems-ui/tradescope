@@ -56,7 +56,7 @@ export default function HistoryDatePage({ params }: { params: Promise<{ date: st
   const formatted = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
-    <div className="max-w-3xl mx-auto px-3 py-3">
+    <div className="max-w-5xl mx-auto px-3 py-3">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-[11px] text-sub mb-3">
         <Link href="/history" className="hover:text-text transition-colors">History</Link>
