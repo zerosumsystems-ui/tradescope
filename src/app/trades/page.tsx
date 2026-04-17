@@ -5,6 +5,7 @@ import type { TradeRead } from '@/lib/types'
 import { TradeCard } from '@/components/trades/TradeCard'
 import { TradeFilters } from '@/components/trades/TradeFilters'
 import { TradeStats } from '@/components/trades/TradeStats'
+import { EquityStatsStrip } from '@/components/trades/EquityStatsStrip'
 
 export default function TradesPage() {
   const [allTrades, setAllTrades] = useState<TradeRead[]>([])
@@ -78,6 +79,8 @@ export default function TradesPage() {
     <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-text mb-1">Trade Catalog</h1>
       <p className="text-sm text-sub mb-4">Brooks reads with scanner comparison</p>
+
+      <EquityStatsStrip trades={allTrades} />
 
       <TradeStats trades={filtered} />
 
