@@ -36,7 +36,7 @@ export function ScoringLegend() {
             <dt className="font-semibold text-text text-[11px] font-mono">SPT (0–3)</dt>
             <dd className="text-[11px] text-sub leading-snug">Small pullback trend — calm drift with tiny pullbacks</dd>
             <dt className="font-semibold text-text text-[11px] font-mono">BPA (-1–+2)</dt>
-            <dd className="text-[11px] text-sub leading-snug">Brooks pattern alignment — H2/L2 = +2, opposing = -1</dd>
+            <dd className="text-[11px] text-sub leading-snug">Brooks pattern alignment — H2/L2 in-direction = +2, H1/L1 = +1.5, failed-pullback reversal = +1, with-trend continuation = +0.5, opposing = -1</dd>
           </dl>
         </div>
       </div>
