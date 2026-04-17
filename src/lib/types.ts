@@ -100,6 +100,7 @@ export interface ComponentScores {
 export type Signal = "BUY" | "SELL" | "WAIT" | "FOG" | "AVOID"
 export type AdrTier = "cold" | "warm" | "hot" | "extreme"
 export type FillStatus = "held" | "partial" | "recovered" | "failed"
+export type HtfAlignment = "aligned" | "mixed" | "opposed"
 
 export interface ScanResult {
   ticker: string
@@ -110,6 +111,7 @@ export interface ScanResult {
   dayType: string       // e.g. "spike_and_channel"
   cyclePhase?: string   // e.g. "↓ channel 0.36"
   fillStatus?: FillStatus
+  htfAlignment?: HtfAlignment   // daily + weekly bias vs setup direction (scanner B4)
   adr: number           // dollar ADR
   adrRatio: number      // current move / ADR (e.g. 0.7)
   adrMult: number       // ADR multiple
