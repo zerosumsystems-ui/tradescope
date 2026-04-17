@@ -20,17 +20,41 @@ const FILL_STYLES: Record<string, string> = {
   failed: "bg-[rgb(255,80,80)]/15 text-[#e05050]",
 }
 
+// HTF chip — see scanner aiedge/context/htf.py. "no_data" renders nothing.
+const HTF_STYLES: Record<string, string> = {
+  aligned: "bg-teal/10 text-teal border border-teal/35",
+  mixed: "bg-[rgb(245,200,66)]/10 text-[#f5c842] border border-[rgb(245,200,66)]/30",
+  opposed: "bg-red/10 text-red border border-red/35",
+}
+
+const HTF_TITLES: Record<string, string> = {
+  aligned: "Higher-timeframe aligned — daily + weekly bias match the setup direction.",
+  mixed: "Higher-timeframe mixed — one of daily/weekly aligns, the other is neutral or opposed.",
+  opposed: "Higher-timeframe opposed — both daily + weekly bias oppose the setup direction.",
+}
+
 function formatDayType(dt: string): string {
   return dt.replace(/_/g, " ")
 }
 
 export function ScannerCard({ result }: { result: ScanResult }) {
   const { ticker, rank, urgency, uncertainty, signal, dayType, cyclePhase, fillStatus,
-    adr, adrRatio, adrMult, adrTier, movement, components, warning, summary, chart } = result
+    htfAlignment, adr, adrRatio, adrMult, adrTier, movement, components, warning,
+    summary, chart } = result
 
   const movementClass = movement === "NEW" ? "text-teal" :
     movement.startsWith("+") ? "text-teal font-semibold" :
     movement.startsWith("-") ? "text-red font-semibold" : "text-sub"
+
+  // Arrow matches direction: SELL → down, BUY → up. Non-directional signals skip the chip.
+  const htfArrow = signal === "SELL" ? "↓" : "↑"
+  const htfLabel = htfAlignment === "aligned"
+    ? `${htfArrow}D ${htfArrow}W`
+    : htfAlignment === "mixed"
+      ? "↕"
+      : htfAlignment === "opposed"
+        ? "✗"
+        : null
 
   return (
     <details className="bg-surface border border-border rounded-lg mb-2 overflow-hidden group">
@@ -42,7 +66,17 @@ export function ScannerCard({ result }: { result: ScanResult }) {
 
         {/* Ticker block */}
         <div className="min-w-0">
-          <div className="text-base font-bold tracking-tight">{ticker}</div>
+          <div className="text-base font-bold tracking-tight">
+            {ticker}
+            {htfAlignment && htfLabel && (
+              <span
+                title={HTF_TITLES[htfAlignment]}
+                className={`inline-block align-middle ml-1.5 px-1.5 py-px rounded-full text-[10px] font-semibold tracking-wide ${HTF_STYLES[htfAlignment] || ""}`}
+              >
+                {htfLabel}
+              </span>
+            )}
+          </div>
           <div className="text-[11px] text-sub whitespace-nowrap overflow-hidden text-ellipsis">
             {formatDayType(dayType)}
             {cyclePhase && (
