@@ -1,0 +1,39 @@
+name: Capture EOD Scan Snapshot
+
+# Captures the final scanner output of each trading day and POSTs it to
+# /api/scan/history so /history on aiedge.trade is populated.
+#
+# Why 21:30 UTC Mon–Fri:
+#   EDT (Mar–Nov): 5:30 PM ET — 90 min after US equity close (4:00 PM ET)
+#   EST (Nov–Mar): 4:30 PM ET — 30 min after US equity close
+#   Either way, we run after the scanner's last RTH post.
+#
+# On market holidays the scanner produces no fresh results and
+# scripts/capture_eod.py exits 0 without POSTing.
+
+on:
+  schedule:
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch: {}
+
+# Never run two captures concurrently — the API would accept both but the
+# second overwrites the first, wasting compute and confusing logs.
+concurrency:
+  group: capture-eod
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Capture EOD snapshot
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: python3 scripts/capture_eod.py https://www.aiedge.trade
