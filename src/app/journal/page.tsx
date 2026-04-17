@@ -39,7 +39,7 @@ export default function JournalPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-6">
         <div className="skeleton h-8 w-32 mb-2" />
         <div className="skeleton h-4 w-64 mb-6" />
         <div className="flex gap-2 mb-6">
@@ -66,7 +66,7 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-text mb-1">Journal</h1>
       <p className="text-sm text-sub mb-4">Lessons, mistakes, and daily reads</p>
 
@@ -95,7 +95,25 @@ export default function JournalPage() {
         })}
       </div>
 
-      <JournalTimeline entries={filtered} />
+      <JournalTimeline
+        entries={filtered}
+        emptyMessage={emptyMessageFor(activeTab)}
+      />
     </div>
   )
+}
+
+function emptyMessageFor(tab: string): string {
+  switch (tab) {
+    case 'daily_read':
+      return 'No daily reads synced yet. Source: structured pre-market / EOD read notes (pipeline TBD).'
+    case 'mistake':
+      return 'No mistakes logged yet. Source: mistake journal entries (pipeline TBD).'
+    case 'lesson':
+      return 'No lessons yet. Lessons come from ~/code/aiedge/self-eval/lessons.md via scripts/sync_trades.py.'
+    case 'audit_note':
+      return 'No audit notes yet. Audit notes come from SUMMARY_REPORT.md in ~/code/aiedge/audits/ via scripts/sync_trades.py.'
+    default:
+      return 'Nothing here yet.'
+  }
 }

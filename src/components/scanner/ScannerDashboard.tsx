@@ -42,7 +42,7 @@ export function ScannerDashboard() {
   const sorted = hasData ? sortResults(data.results, sortKey) : []
 
   return (
-    <div className="max-w-3xl mx-auto px-3 py-3">
+    <div className="max-w-5xl mx-auto px-3 py-3">
       {/* Header */}
       <header className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-baseline sm:gap-0 mb-3 pb-2 border-b border-border">
         <h1 className="text-[17px] font-bold tracking-tight">Live Scanner</h1>

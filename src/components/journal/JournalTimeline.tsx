@@ -12,9 +12,10 @@ const TYPE_PRIORITY: Record<JournalEntryType, number> = {
 
 interface JournalTimelineProps {
   entries: JournalEntry[]
+  emptyMessage?: string
 }
 
-export function JournalTimeline({ entries }: JournalTimelineProps) {
+export function JournalTimeline({ entries, emptyMessage }: JournalTimelineProps) {
   // Group by date
   const grouped = entries.reduce((acc, entry) => {
     if (!acc[entry.date]) acc[entry.date] = []
@@ -28,6 +29,14 @@ export function JournalTimeline({ entries }: JournalTimelineProps) {
   // Sort entries within each date by type priority
   for (const date of sortedDates) {
     grouped[date].sort((a, b) => TYPE_PRIORITY[a.type] - TYPE_PRIORITY[b.type])
+  }
+
+  if (sortedDates.length === 0) {
+    return (
+      <div className="text-center py-16 text-sub text-sm">
+        {emptyMessage ?? 'Nothing here yet.'}
+      </div>
+    )
   }
 
   return (
