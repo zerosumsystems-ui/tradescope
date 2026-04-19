@@ -64,16 +64,36 @@ export function BrooksAnalysisPanel({ trip }: Props) {
 
   if (!trip.pairedReadId) {
     return (
-      <div className="bg-bg rounded p-3 text-xs text-sub border border-dashed border-border">
-        <div className="font-semibold text-text mb-1">No pre-trade Brooks read on file</div>
+      <div className="bg-bg rounded p-3 text-xs text-sub border border-dashed border-border space-y-2">
+        <div className="font-semibold text-text">No Brooks read paired to this trade</div>
         <p>
-          This trade has no matching pre-trade read in the{' '}
+          The{' '}
           <Link href="/trades" className="text-teal hover:underline">
             Trade Catalog
-          </Link>
-          . Writing a Brooks read before (or shortly after) an entry lets the
-          journal grade the execution against the plan.
+          </Link>{' '}
+          only contains Brooks reads the scanner&apos;s daily audit generates —
+          one per scanner-flagged ticker per day. Your fill on{' '}
+          <span className="text-text font-semibold">{trip.ticker}</span>{' '}
+          ({trip.entryTime.slice(0, 10)}) doesn&apos;t match any read in the
+          catalog, so there&apos;s nothing to grade this trade against.
         </p>
+        <p className="text-[11px]">
+          To get analysis + grades on more of your trades, you&apos;d need a
+          Brooks read generated at the time you traded. Options:
+        </p>
+        <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+          <li>
+            Trade tickers the scanner flags (they auto-get reads via the daily audit)
+          </li>
+          <li>
+            Write a read yourself before entering a trade and push it to{' '}
+            <code className="text-teal">/api/trades</code>
+          </li>
+          <li>
+            Add Claude API (paid) to the site to generate reads on-demand for
+            orphan trades — skipped in the current build per your preference
+          </li>
+        </ul>
       </div>
     )
   }

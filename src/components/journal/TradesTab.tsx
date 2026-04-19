@@ -292,19 +292,16 @@ function ExpandedBody({ trip }: { trip: RoundTrip }) {
         </span>
         <button
           onClick={() => setShowBrooks((v) => !v)}
-          disabled={!trip.pairedReadId}
           aria-pressed={showBrooks}
           title={
             trip.pairedReadId
               ? 'Toggle the Brooks read + execution grade'
-              : 'No pre-trade Brooks read on file for this trade'
+              : 'No paired read — click to see why'
           }
           className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors border ${
-            !trip.pairedReadId
-              ? 'opacity-40 cursor-not-allowed border-border text-sub'
-              : showBrooks
-                ? 'bg-teal/20 text-teal border-teal/40'
-                : 'border-border text-sub hover:text-text hover:border-teal/30'
+            showBrooks
+              ? 'bg-teal/20 text-teal border-teal/40'
+              : 'border-border text-sub hover:text-text hover:border-teal/30'
           }`}
         >
           {showBrooks ? 'Hide Brooks analysis' : 'Brooks analysis'}
