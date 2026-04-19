@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/progress', label: 'Progress' },
   { href: '/knowledge', label: 'Knowledge' },
   { href: '/findings', label: 'Findings' },
+  { href: '/studies', label: 'Studies' },
   { href: '/routines', label: 'Routines' },
 ]
 
