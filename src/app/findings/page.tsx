@@ -17,6 +17,19 @@ type Run = {
 
 const TREND_RUNS: Run[] = [
   {
+    id: 'incr-20',
+    label: 'incr 20',
+    date: '2026-04-19',
+    headline:
+      'One of the 12 trend judges was making things worse — a single-knob change flips it positive',
+    recommendation:
+      'Two-axis sweep (window × min-consec) of the `always_in` contributor on 800 RTH sessions. Production (W=5, K=2) fires on 36 % of days at 57.6 % directional accuracy — WORSE than the 66 % "always guess UP" baseline on this up-biased sample. Proposed (W=10, K=2) fires on 51.9 % of days at 66.9 % accuracy — matches baseline while also speaking 16 pp more often. Change `ALWAYS_IN_WINDOW` from 5 → 10 in `aiedge/context/trend.py`. Same-session labelling; not forward WR.',
+    noteSlug: 'Scanner/methodology/trend-contributor-findings-2026-04-19-incr20-always-in-sweep',
+    figure: '/findings/figures/always_in_layman_before_after.png',
+    figureCaption:
+      'OLD vs NEW setting on the two layman questions — does the judge speak, and when it does, is it right? Dashed line is the "always guess UP" baseline.',
+  },
+  {
     id: 'incr-19',
     label: 'incr 19',
     date: '2026-04-19',
@@ -375,18 +388,18 @@ export default function FindingsPage() {
 
       <section className="mb-10">
         <h3 className="text-base font-semibold text-text mb-4 pb-2 border-b border-border">
-          Headline numbers (incr 18)
+          Headline numbers (incr 20)
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: 'Sessions analysed', value: '800' },
             { label: 'Symbols', value: '387' },
-            { label: 'Bars analysed', value: '45,437' },
-            { label: 'Production fire rate', value: '0.12 %' },
-            { label: 'Recommended floor', value: '0.25' },
-            { label: 'Fire rate at 0.25', value: '9.75 %' },
-            { label: 'Up-pred accuracy', value: '92.2 %' },
-            { label: 'Down-pred accuracy', value: '87.0 %' },
+            { label: '"Guess UP" baseline', value: '66.0 %' },
+            { label: 'Cells swept (W × K)', value: '20' },
+            { label: 'OLD (W=5, K=2) fire', value: '36.0 %' },
+            { label: 'OLD accuracy', value: '57.6 %' },
+            { label: 'NEW (W=10, K=2) fire', value: '51.9 %' },
+            { label: 'NEW accuracy', value: '66.9 %' },
           ].map((kpi) => (
             <div
               key={kpi.label}
@@ -397,6 +410,11 @@ export default function FindingsPage() {
             </div>
           ))}
         </div>
+        <p className="text-xs text-sub italic mt-3 leading-relaxed">
+          OLD setting loses to the dumb strategy on this up-biased 9-day sample.
+          NEW setting matches baseline <em>and</em> speaks 16 pp more often.
+          Same-session directional labelling — not forward win-rate.
+        </p>
       </section>
 
       <section className="mb-12">
