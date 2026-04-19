@@ -29,11 +29,11 @@ const CLAUDE_STUDIES: Study[] = [
     producer: 'claude',
     stream: 'Scanner — trend classification',
     title:
-      'Live `TrendState.direction` rarely flips once formed — 63% of sessions have zero flips',
-    lastRun: '2026-04-19 18:35 ET · incr 22',
+      '`|strength| ≥ 0.15 at bar 20` → 93% direction-survival to final bar; flips cluster in bars 15–39',
+    lastRun: '2026-04-19 19:18 ET · incr 23',
     takeaway:
-      'First real-time stability study of `compute_trend_state` across 300 RTH sessions × progressive bar calls (~20 000 calls, 468 s). 63.3% of directional sessions have ZERO up↔down flips end-to-end; mean 0.56, max 5. Median lock-in bar is 11 (essentially the opening); 70% lock in by bar 20, 93% by bar 40. At bar 10 the classifier is near-random (34/35/31 up/down/none); by bar 40 it is decisive (66/21/13). Live readings are safe to consume from ~bar 20 onward. No production change proposed — validates consumption, not yet wiring. Four prior threshold recommendations (incr 17–21) still pending Will\'s nod.',
-    source: 'aiedge-vault · Scanner/methodology/trend-contributor-findings-2026-04-19-incr22-realtime-stability.md',
+      'Flip timing + strength-as-predictor + structure trajectory, 200 (symbol, session) pairs, 12 129 bar rows, 355 s runtime. Three decisive answers: (1) flips cluster bars 15–39 (64% of all flips; peaks at 15–19 / 30–39) — waiting until bar 30 dodges most reversibility. (2) `|strength| ≥ 0.15` at bar 20 is a clean real-time gate — 93% dir-survival vs 47% for `< 0.15`, 85% zero-flip rate vs 46%, median lock-in 10 vs 18. (3) Structure flips 16× more than direction (9.5 vs 0.58 / session) but most are the intended spike→channel progression — at bar 10, 100% spike; by bar 78, 94% channel. Five threshold recommendations (incr 17–23) still pending Will\'s nod.',
+    source: 'aiedge-vault · Scanner/methodology/trend-contributor-findings-2026-04-19-incr23-flip-timing.md',
     href: { label: 'Open Findings → Trend arc', url: '/findings#trend' },
   },
   {
@@ -52,10 +52,10 @@ const CLAUDE_STUDIES: Study[] = [
     producer: 'claude',
     stream: '/organize-my-code scheduled task',
     title: '~7.6 GB of stale repos reclaimable, no moves executed yet',
-    lastRun: '2026-04-19 18:37 ET · run #19',
+    lastRun: '2026-04-19 19:37 ET · run #20',
     takeaway:
-      '5 archive candidates (`BPA-Bot-1`, `Gap-ups`, `Finviz-clone`, `market-dashboard`, `microgap-bot`) and 2 active repos to move into `~/code/` (`Brooks-Price-Action`, `trading-range`). `~/keys/*.env` now mode 600. Organizational state unchanged since 04-18 — all moves gated on explicit go-ahead per management contract. Runs #18–19 used the scheduled-task cycle to ship and then refresh the /studies tab itself.',
-    source: '~/code/routines/FINDINGS_2026-04-19_*.md (15 runs today)',
+      '5 archive candidates (`BPA-Bot-1` 4.3 G, `Gap-ups` 2.8 G, `Finviz-clone` 451 M, `market-dashboard` 3.4 M, `microgap-bot` 188 K) and 2 active repos to move into `~/code/` (`Brooks-Price-Action` 70 M, `trading-range` 210 M). `~/keys/*.env` already mode 600. Organizational state unchanged since 04-18 — all moves gated on explicit go-ahead per management contract. Fresh signal from Codex `claude-updates` (19:02 ET): the task was dual-writing duplicate reports to both `~/code/` root and `vault/Meta` — the scheduled-task file has been amended to write only to `vault/Meta`; ~17 stale duplicates at `~/code/` root are safe-to-delete on go-ahead.',
+    source: '~/code/routines/FINDINGS_2026-04-19_*.md (17 runs today)',
   },
 ]
 
@@ -65,59 +65,59 @@ const CODEX_STUDIES: Study[] = [
     producer: 'codex',
     stream: 'Research — Brooks market cycle',
     title: 'Brooks is a spectrum model; canonical loop is spike → channel → range → next breakout',
-    lastRun: '2026-04-19 18:03 ET',
+    lastRun: '2026-04-19 19:02 ET',
     takeaway:
-      'Codex-authored memo from local Brooks extracts under `~/code/aiedge/brooks-source/` plus `~/Brooks-Price-Action/` skill references. Operational phase map: Balance · Breakout/Spike · Channel · Transition · Resolution. Pullback and reversal are transition states until the next breakout proves itself. Rendered with local Databento NQ examples for 2021-03-24, 2024-11-13, 2024-12-18.',
+      'Codex-authored memo re-audited against local Brooks extracts under `~/code/aiedge/brooks-source/` and `~/Brooks-Price-Action/` skill references. Rewritten with sharper spectrum-vs-operational-loop distinction, explicit provenance, and machine-local code-label mapping (`BPA-Bot-1` labels → Brooks phases). Operational loop: `breakout/spike → channel → trading range → next breakout`; pullback and reversal treated as transition states until the opposite breakout proves itself. Rendered with local Databento NQ examples for 2021-03-24, 2024-11-13, 2024-12-18.',
     source: '~/.codex/automations/research/market_cycle_phases_codex.md',
   },
   {
     id: 'code-review',
     producer: 'codex',
     stream: 'Code review sweep',
-    title: 'Three live-trading bugs flagged in trading-range; pytest collection regressions in BPA-Bot-1',
-    lastRun: '2026-04-19 18:04 ET',
+    title: 'Three new `Gap-ups/backtest/engine.py` bugs: short-side EoD P&L, per-symbol daily stop, fills vs submissions',
+    lastRun: '2026-04-19 19:06 ET',
     takeaway:
-      '`live/scanner.py` applies ET open/close times directly to UTC-indexed bars (missed morning setups) and counts stacked gaps off the narrowed `trigger_bar` instead of `first_trigger_bar`. `live/trader.py` indexes `signal[…]` unconditionally while reconciled trades store `signal=None`. `live/executor_tradovate.py` filters fills by `contractId` — stale brackets misattributed. `BPA-Bot-1/test_confidence.py` calls `sys.exit(1)` during pytest collection.',
+      'New pass scoped to `/Users/williamkosloski/Gap-ups`. (1) `engine.py` end-of-day close prices every open trade as long — short trades get wrong exit side and wrong P&L sign. (2) `daily_loss_limit_pct` is enforced against a fresh `TradeManager` inside each `_run_day()` call while `_run_intraday_rs_day()` invokes `_run_day()` per symbol — the "daily stop" is per-symbol, not portfolio-wide. (3) `symbol_filled` flips to `True` on order submission rather than on fill — a later cancellation still blocks all subsequent setups for that symbol in the same day/window. Prior `trading-range` live-path bugs and `BPA-Bot-1` pytest collection regressions remain open.',
     source: '~/.codex/automations/code-review/memory.md',
   },
   {
     id: 'performance-audit',
     producer: 'codex',
     stream: 'Performance audit',
-    title: 'market-dashboard Screener fans out up to 21 Polygon requests per candle load',
-    lastRun: '2026-04-19 18:04 ET',
+    title: 'market-dashboard Screener fans out to 22 Polygon calls per candle load; no cache headers set',
+    lastRun: '2026-04-19 19:02 ET',
     takeaway:
-      'Dashboard initial refresh is 6 API requests (`indices`, `breadth`, 2× `movers`, 2× `aggs`). Screener tab adds 2 app requests, `/api/candles` fans out to ~21 Polygon requests, `/api/screener` re-fetches the full snapshot. `index.html` grew 18.9 KB → 28.6 KB at commit `0dd4c4b`. Highest-leverage fixes: consolidate snapshot endpoints, cache Polygon responses, batch or defer mini-charts.',
+      'Re-measured at `HEAD` (`0dd4c4b`, no new commits). `index.html` 28,588 B raw / 7,877 B gzip (+6,981 B raw since `b9f5150`); `screener.js` 6,348 B raw / 2,034 B gzip. Dashboard initial `refreshAll()` still triggers 6 browser API calls and 6 Polygon upstream calls. First screener load triggers 2 browser API calls but amplifies to 22 Polygon upstream calls (1 full-market snapshot + up to 21 per-ticker candle requests). API handlers still fetch Polygon on every request with zero cache headers or shared cache layer. Fixes: one cached snapshot + derive breadth/movers/screener from shared payload; defer chart loading / smaller Top-N; add `Server-Timing` next run.',
     source: '~/.codex/automations/performance-audit/memory.md',
   },
   {
     id: 'sdk-drift',
     producer: 'codex',
     stream: 'Dependency & SDK drift',
-    title: 'aiedge-scanner has a real internal version conflict on `databento`',
-    lastRun: '2026-04-19 18:03 ET',
+    title: 'aiedge-scanner `databento` pin conflict persists; `site` + `Finviz-clone` lockfiles require Node ≥ 20.9.0 but no `.nvmrc`',
+    lastRun: '2026-04-19 19:03 ET',
     takeaway:
-      '`pyproject.toml` pins `databento>=0.70,<1` while `requirements.txt` still allows `>=0.38.0` and carries unrelated video/AI packages. Frontend split between `site` (next 16.2.4 / Tailwind 4.2.2) and `Finviz-clone` (next 16.1.6 / Tailwind 4.1.18) is a stack skew, not a lockfile bug. No `.nvmrc` / `.python-version` / `.tool-versions` anywhere — runtime targets undocumented.',
+      'Re-checked the prior high-signal targets. `aiedge-scanner` internal drift still real: `pyproject.toml` pins `databento>=0.70,<1` vs `requirements.txt` `>=0.38.0`; `requirements.txt` also still carries packages absent from project metadata (`anthropic`, `elevenlabs`, Google auth/upload libs, `httpx`, `jinja2`, `jsonschema`, `mplfinance`, `Pillow`) while `pyproject.toml` adds `pytz` the requirements file omits. `site` is internally aligned at `next 16.2.4 / react 19.2.4` with `package-lock.json`, `Finviz-clone` at `next ^16.1.6 / react ^19.2.4`; both lockfiles require `node >= 20.9.0` but neither repo pins a Node version. `Downloads/tradescope`, `BPA-Bot-1`, `.openclaw/workspace/*`, and `trading-range/live` still manifest-only — upgrade targets stay suggestions until lockfiles land.',
     source: '~/.codex/automations/dependency-and-sdk-drift/memory.md',
   },
   {
     id: 'claude-updates',
     producer: 'codex',
     stream: 'Claude activity monitor',
-    title: 'In the last 120 Claude sessions, 111 were scheduled tasks and 9 were manual',
-    lastRun: '2026-04-19 18:03 ET',
+    title: '`aiedge/scanner` is 10 commits ahead of origin with 16 modified + 55 untracked files — Monday launch will depend on a dirty checkout',
+    lastRun: '2026-04-19 19:02 ET',
     takeaway:
-      'Active scheduled-task clusters: backtest, small-pullback-trend-research, aiedge-self-review-tab, maintenance, trends, accountant, organize-my-code, management, aiedge-trades-tab, aiedge-journal-tab. Staler tasks to watch: sync-vault-to-prod, scanner-post-fix-run, eod-scan-capture (last 2026-04-16); rd (2026-04-01); afternoon-momentum-scanner, daily-rs-rankings (2026-03-10).',
+      'Codex flags the main coordination risk: scanner `main` is 10 commits ahead of origin with 16 tracked modifications and 55 untracked files. Also notes `organize-my-code` was dual-writing duplicate `CODE_ORGANIZATION_*.md` files into both `~/code/` root and `vault/Meta/` — now fixed at the skill level; historical root duplicates stay pending go-ahead. Scanner reliability: Databento timeout 2026-04-17 caused ~57 min gap before relaunch. `ACTIVITY.md` ledger exists and is useful but depends on sweeps. Suggested next ideas: pre-market scanner checkpoint, a shared `ACTIVITY.md` append helper, and making `/studies` itself data-driven from routine outputs rather than hard-coded cards.',
     source: '~/.codex/automations/claude-updates/memory.md',
   },
   {
     id: 'research-review',
     producer: 'codex',
     stream: 'Research review — verifies Claude output',
-    title: 'SPT playbook numbers refreshed 101 → 103 baseline trades; dated snapshots tagged',
-    lastRun: '2026-04-19 18:06 ET',
+    title: 'Monday watchlist misstates short-side hybrid target map; PLAYBOOK adoption status internally inconsistent',
+    lastRun: '2026-04-19 19:05 ET',
     takeaway:
-      'Reran `spt_rule10_rule11_interaction`, `spt_climactic_exit`, `spt_first_ma_gap_exit`, `spt_next_session_followthrough` scratch scripts. April 19 directional conclusions hold; headline counts were stale. Marked dated note metrics as point-in-time snapshots, added current rerun verification numbers to the PLAYBOOK top matter, updated stale series-count references to 33 follow-up notes.',
+      'Reviewed the publication layer in `~/code/iphone/spt-research` for pt 33 + Monday-open watchlist against the scratch outputs (`_out_spt_target_walkforward_2026_04_18.txt`, `_out_spt_rule10_rule11_interaction_2026_04_19.txt`). Core research math still checks out. Findings: (1) Monday watchlist uses `L1/L2 → 4R` for shorts but the validated hybrid mapping is `H1/H2 longs + H1 short → 5R`, `H2 short → 4R`, `L1/L2 → 3R`. (2) PLAYBOOK is inconsistent on adoption — rules 9/10/11 labeled pending in the rule table while the economics table and Monday note treat the C3 stack as current. (3) Pt 33 itself is consistent with `/tmp/spt_scan/strongest.json` (pure-strength), not the stricter `ranked.json`/`ranked_v2.json`. Earlier 18:06 ET pass already refreshed the vault PLAYBOOK 101 → 103 baseline trades and tagged dated snapshots.',
     source: '~/.codex/automations/research-review/memory.md',
   },
 ]
