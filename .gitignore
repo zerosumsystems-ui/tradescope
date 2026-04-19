@@ -39,6 +39,9 @@ __pycache__/
 # vercel
 .vercel
 
+# supabase CLI local state (project-ref, pooler url, etc)
+/supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

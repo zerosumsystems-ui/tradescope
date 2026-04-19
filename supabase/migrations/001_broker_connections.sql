@@ -14,11 +14,13 @@ CREATE TABLE IF NOT EXISTS broker_connections (
 ALTER TABLE broker_connections ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own connections
+DROP POLICY IF EXISTS "Users can view own broker connections" ON broker_connections;
 CREATE POLICY "Users can view own broker connections"
   ON broker_connections FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Service role can do everything (used by API endpoints)
+DROP POLICY IF EXISTS "Service role full access" ON broker_connections;
 CREATE POLICY "Service role full access"
   ON broker_connections FOR ALL
   USING (true)
