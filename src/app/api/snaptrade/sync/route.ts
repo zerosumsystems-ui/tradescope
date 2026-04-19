@@ -80,6 +80,31 @@ type SnapAccount = {
 }
 
 /**
+ * Money-market / cash-sweep tickers that brokers auto-buy/sell to park idle
+ * cash. These are not discretionary trades and would only add noise to the
+ * Fills tab + skew per-setup stats.
+ *
+ *   Fidelity: SPAXX, FDRXX, FCASH, FZFXX, FGMXX, FGCXX, FDLXX
+ *   Schwab:   SWVXX, SNAXX, SNOXX, SNVXX
+ *   Vanguard: VMFXX, VMRXX
+ *   Others:   TFDXX (T. Rowe), JPCXX (JP Morgan)
+ */
+const CASH_SWEEP_TICKERS = new Set([
+  'SPAXX', 'FDRXX', 'FCASH', 'FZFXX', 'FGMXX', 'FGCXX', 'FDLXX',
+  'SWVXX', 'SNAXX', 'SNOXX', 'SNVXX',
+  'VMFXX', 'VMRXX',
+  'TFDXX', 'JPCXX',
+])
+
+/**
+ * Minimum share quantity to treat a fill as a real trade. Below this we
+ * assume the fill is DRIP / fractional dividend reinvestment / rounding
+ * artifact, not a discretionary entry. One share is the standard Brooks
+ * unit anyway — anything sub-share is noise for journaling.
+ */
+const MIN_QTY = 1
+
+/**
  * Map a SnapTrade UniversalActivity into our FilledTrade shape. Handles both
  * the newer transactionsAndReporting.getActivities (snake_case) shape and the
  * older accountInformation.getAccountActivities (camelCase) shape.
@@ -96,10 +121,12 @@ function activityToFilled(activity: SnapActivity): FilledTrade | null {
     ''
   if (!rawSymbol) return null
   const ticker = rawSymbol.split(' ')[0].toUpperCase()
+  if (CASH_SWEEP_TICKERS.has(ticker)) return null
 
   const qty = Math.abs(activity.units ?? activity.quantity ?? 0)
   const price = activity.price ?? 0
   if (qty === 0 || price === 0) return null
+  if (qty < MIN_QTY) return null
 
   const dateStr =
     activity.tradeDate ??
