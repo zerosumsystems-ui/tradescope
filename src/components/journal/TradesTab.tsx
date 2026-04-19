@@ -358,7 +358,7 @@ function RoundTripChart({ trip }: { trip: RoundTrip }) {
     <div>
       <div className="flex items-center justify-between mb-2 text-[10px] uppercase tracking-wider text-sub">
         <span>Chart · {trip.ticker}</span>
-        <span className="text-gray">{effectiveTf} bars · Yahoo</span>
+        <span className="text-gray">{effectiveTf} bars · Databento</span>
       </div>
       <LightweightChart chart={chart} height={340} />
     </div>
