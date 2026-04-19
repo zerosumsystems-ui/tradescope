@@ -244,6 +244,8 @@ export interface TradesPayload {
 
 /** Filled Trades (broker auto-log) types — populated by /api/snaptrade/sync */
 
+import type { EquityStats } from './stats'
+
 export type FillAction = "BUY" | "SELL"
 
 export interface FilledTrade {
@@ -273,7 +275,7 @@ export interface PairedTrade {
 export interface FilledTradesPayload {
   fills: FilledTrade[]
   paired: PairedTrade[]                     // Phase 2: populated; Phase 1: empty
-  stats: Record<string, unknown>            // Phase 2: per-setup EquityStats; Phase 1: {}
+  stats: Record<string, EquityStats>        // per-setupBrooks stats (Phase 2)
   syncedAt: string
   lastSyncError: string | null
   accountCount: number

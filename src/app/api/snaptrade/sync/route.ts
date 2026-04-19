@@ -1,12 +1,14 @@
 import type {
   FilledTrade,
   FilledTradesPayload,
+  TradesPayload,
 } from '@/lib/types'
 import { requireSession } from '@/lib/auth/require-session'
 import { requireSyncSecret } from '@/lib/auth/sync-secret'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createSnaptradeClient } from '@/lib/snaptrade/client'
+import { pairFills, perSetupStats } from '@/lib/pairing'
 import { getSnapshot, setSnapshot } from '@/lib/snapshots'
 
 export const dynamic = 'force-dynamic'
@@ -293,10 +295,21 @@ export async function POST(request: Request) {
     b.fillTime.localeCompare(a.fillTime)
   )
 
+  // Pair against the Brooks Trade Catalog (pre-trade reads from /trades).
+  // Pairing is a pure function — cache the result in the snapshot so the
+  // journal page just renders.
+  const trades = await getSnapshot<TradesPayload>('trades', {
+    trades: [],
+    syncedAt: '',
+    tradeCount: 0,
+  })
+  const paired = pairFills(mergedFills, trades.trades)
+  const stats = perSetupStats(paired, trades.trades)
+
   const payload: FilledTradesPayload = {
     fills: mergedFills,
-    paired: [],       // Phase 2 populates
-    stats: {},        // Phase 2 populates
+    paired,
+    stats,
     syncedAt: new Date().toISOString(),
     lastSyncError,
     accountCount: totalAccounts,

@@ -1,0 +1,39 @@
+name: Sync Broker Trades
+
+# Nightly SnapTrade → aiedge.trade sync. Pulls fresh fills from every
+# connected broker_connections row, pairs them against the Brooks Trade
+# Catalog, and updates the `filled_trades` api_snapshot.
+#
+# Why 22:15 UTC Mon–Fri:
+#   EDT (Mar–Nov): 6:15 PM ET — 45 min after capture-eod.yml (21:30 UTC)
+#     so the `trades` snapshot is already fresh before pairing runs.
+#   EST (Nov–Mar): 5:15 PM ET — still post-close, same ordering.
+#
+# The sync route ignores users with no broker_connections row and silently
+# no-ops on holidays (SnapTrade just returns an empty activities list).
+
+on:
+  schedule:
+    - cron: '15 22 * * 1-5'
+  workflow_dispatch: {}
+
+# Never run two syncs concurrently — the second would overwrite the first
+# while it's still writing, potentially dropping fills.
+concurrency:
+  group: sync-broker-trades
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger SnapTrade sync
+        env:
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $SYNC_SECRET" \
+            -H "Content-Type: application/json" \
+            --data '{}' \
+            https://www.aiedge.trade/api/snaptrade/sync
