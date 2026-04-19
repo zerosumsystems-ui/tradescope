@@ -20,6 +20,7 @@ export type SnapshotKey =
   | 'patterns'
   | 'progress'
   | 'review'
+  | 'routines'
   | 'scan'
   | 'scan-history'
 

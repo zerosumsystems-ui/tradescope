@@ -23,7 +23,7 @@ export type SignalDirection = "long" | "short"
 
 export interface ChartAnnotations {
   phaseLabel?: string                   // "bear_spike"
-  alwaysIn?: string                     // "short_moderate"
+  alwaysIn?: string                     // "long" | "short" | "unclear" (or descriptive like "short_moderate")
   strength?: string                     // "short_4"
   signalBar?: { time: number; direction: SignalDirection }
   trendline?: {
@@ -32,6 +32,8 @@ export interface ChartAnnotations {
   }
   stopPrice?: number
   targetPrice?: number
+  entryPrice?: number                   // solid entry line (drawn alongside stop/target)
+  entryMode?: "stop" | "limit" | "market"
   verdict?: { decision: string; probability: number; rr: number }
   agreement?: "AGREE" | "PARTIAL" | "MINOR" | "MAJOR" | "DISAGREE" | "INVERTED"
   adrMultiple?: number
@@ -344,7 +346,62 @@ export interface AuditPayload {
   latest: AuditSummary | null
   symbols: AuditSymbolRow[]
   history: AuditHistoryEntry[]
+  backtests?: BacktestCorpus | null
   syncedAt: string
+}
+
+/** Urgency-gated backtest corpus (vault/Scanner/backtests/) */
+
+export interface BacktestSetupRow {
+  setup: string
+  n: number
+  wrPct: number         // e.g. 56 for 56%
+  expR: number          // expectancy in R (e.g. +0.67)
+  ciLow: number | null  // 95% CI low on E[R] (null if too small to compute)
+  ciHigh: number | null
+  verdict: string
+}
+
+export interface BacktestMonthRow {
+  label: string         // "M6", "M5", "Prior daily log", "Original 30-day"
+  range: string         // "2025-08-13 → 2025-09-11"
+  w: number
+  l: number
+  i: number
+  wrPct: number
+  top10WrPct: number | null
+  deltaPts: number | null // top-tier WR minus top-10 WR
+}
+
+export interface BacktestDailyRow {
+  date: string          // "2026-03-06"
+  topTierNames: string
+  topTierN: number      // resolved trades
+  topTierWL: string     // "1W / 0L" or "—"
+  notes: string
+}
+
+export interface BacktestCorpus {
+  period: string        // "2025-08-13 → 2026-04-17"
+  computed: string      // "2026-04-18"
+  headline: {
+    topTierW: number
+    topTierL: number
+    topTierI: number
+    topTierWrPct: number
+    expectancyR: number
+    expectancyCiLow: number
+    expectancyCiHigh: number
+    top10W: number
+    top10L: number
+    top10I: number
+    top10WrPct: number
+    runIdCount: number
+  }
+  perSetup: BacktestSetupRow[]
+  perMonth: BacktestMonthRow[]
+  dailyLog: BacktestDailyRow[]
+  rollupMarkdown: string  // full ROLLUP_6MO body for expandable viewer
 }
 
 /** Progress (Self-Eval Calibration) types */
@@ -392,4 +449,33 @@ export interface ProgressPayload {
     decision: CategoryCount
   }
   syncedAt: string
+}
+
+/** Routines — autonomous-job status dashboard (v0: status strip) */
+
+export type RoutineCategory =
+  | "scanner"
+  | "briefing"
+  | "videopipeline"
+  | "gaps"
+  | "sync"
+  | "other"
+
+export type RoutineHealth = "healthy" | "stale" | "failed" | "unknown"
+
+export interface RoutineStatus {
+  id: string                         // "com.aiedge.scanner"
+  label: string                      // "AI Edge Scanner"
+  category: RoutineCategory
+  schedule: string                   // human-readable: "Mon–Fri 09:15 → 16:05 ET"
+  lastRunAt: string | null           // ISO timestamp, null if never / unknown
+  lastExitStatus: number | null      // 0=success, non-zero=fail, null=unknown
+  outputSummary: string | null       // one-liner, e.g. "5 top-urgency"
+  status: RoutineHealth
+}
+
+export interface RoutinesPayload {
+  routines: RoutineStatus[]
+  syncedAt: string
+  hostName: string
 }
