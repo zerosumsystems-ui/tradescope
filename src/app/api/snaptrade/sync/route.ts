@@ -41,7 +41,15 @@ const EMPTY_PAYLOAD: FilledTradesPayload = {
 
 type SnapSymbol = {
   symbol?: string
+  raw_symbol?: string
+  rawSymbol?: string
   description?: string
+} | null | undefined
+
+type SnapActivityAccount = {
+  id?: string
+  name?: string | null
+  number?: string | null
 } | null | undefined
 
 type SnapActivity = {
@@ -57,8 +65,10 @@ type SnapActivity = {
   tradeDate?: string
   trade_date?: string
   settlementDate?: string
+  settlement_date?: string
   description?: string
-  account?: { id?: string; name?: string | null } | null
+  institution?: string
+  account?: SnapActivityAccount
 }
 
 type SnapAccount = {
@@ -69,17 +79,21 @@ type SnapAccount = {
   brokerage?: { name?: string | null } | null
 }
 
-/** Ported verbatim (minus types) from the old activityToTrade in snaptrade-sync.js */
-function activityToFilled(
-  activity: SnapActivity,
-  accountId: string,
-  accountName: string | null
-): FilledTrade | null {
+/**
+ * Map a SnapTrade UniversalActivity into our FilledTrade shape. Handles both
+ * the newer transactionsAndReporting.getActivities (snake_case) shape and the
+ * older accountInformation.getAccountActivities (camelCase) shape.
+ */
+function activityToFilled(activity: SnapActivity): FilledTrade | null {
   const type = (activity.type ?? '').toUpperCase()
   if (type !== 'BUY' && type !== 'SELL') return null
 
   const rawSymbol =
-    activity.symbol?.symbol ?? activity.symbol?.description ?? ''
+    activity.symbol?.symbol ??
+    activity.symbol?.raw_symbol ??
+    activity.symbol?.rawSymbol ??
+    activity.symbol?.description ??
+    ''
   if (!rawSymbol) return null
   const ticker = rawSymbol.split(' ')[0].toUpperCase()
 
@@ -91,6 +105,7 @@ function activityToFilled(
     activity.tradeDate ??
     activity.trade_date ??
     activity.settlementDate ??
+    activity.settlement_date ??
     ''
   if (!dateStr) return null
   const fillTime = new Date(dateStr).toISOString()
@@ -98,6 +113,14 @@ function activityToFilled(
 
   const brokerTradeId = activity.id ?? null
   const id = brokerTradeId ?? `${fillTime}_${ticker}_${type}_${qty}`
+
+  // accountName: prefer the activity's own account payload (cross-account
+  // endpoint); fall back to institution string for the older shape.
+  const acct = activity.account
+  const accountName = acct?.name
+    ?? (acct?.number ? `${activity.institution ?? 'Broker'} ${acct.number}` : null)
+    ?? activity.institution
+    ?? null
 
   return {
     id,
@@ -110,7 +133,7 @@ function activityToFilled(
     amount: qty * price,
     fillTime,
     date,
-    accountId,
+    accountId: acct?.id ?? '',
     accountName,
     brokerTradeId,
     description: activity.description ?? activity.symbol?.description ?? null,
@@ -123,48 +146,6 @@ type Connection = {
   snaptrade_user_secret: string
 }
 
-type SnapAuthorization = { id?: string; disabled?: boolean }
-
-/**
- * Kick every brokerage authorization to re-pull holdings + activities from
- * the broker. Async on SnapTrade's side — they return 200 immediately and
- * do the actual fetch in the background. Errors are non-fatal; a refresh
- * failure for one authorization shouldn't block the sync of others.
- */
-async function refreshAllAuthorizations(conn: Connection): Promise<number> {
-  const snaptrade = createSnaptradeClient()
-  let refreshed = 0
-  try {
-    const { data: auths } = await snaptrade.connections.listBrokerageAuthorizations({
-      userId: conn.snaptrade_user_id,
-      userSecret: conn.snaptrade_user_secret,
-    })
-    const list: SnapAuthorization[] = Array.isArray(auths) ? auths : []
-    for (const a of list) {
-      if (!a.id || a.disabled) continue
-      try {
-        await snaptrade.connections.refreshBrokerageAuthorization({
-          authorizationId: a.id,
-          userId: conn.snaptrade_user_id,
-          userSecret: conn.snaptrade_user_secret,
-        })
-        refreshed += 1
-      } catch (refreshErr) {
-        console.warn(
-          `[snaptrade/sync] refresh auth ${a.id} failed:`,
-          refreshErr instanceof Error ? refreshErr.message : String(refreshErr)
-        )
-      }
-    }
-  } catch (listErr) {
-    console.warn(
-      '[snaptrade/sync] listBrokerageAuthorizations failed:',
-      listErr instanceof Error ? listErr.message : String(listErr)
-    )
-  }
-  return refreshed
-}
-
 async function syncConnection(
   conn: Connection,
   startDate: string,
@@ -172,61 +153,40 @@ async function syncConnection(
 ): Promise<{ fills: FilledTrade[]; accountCount: number }> {
   const snaptrade = createSnaptradeClient()
 
+  // List accounts for the display count (the cross-account activities
+  // endpoint doesn't tell us total account count directly).
   const { data: accountsResp } = await snaptrade.accountInformation.listUserAccounts({
     userId: conn.snaptrade_user_id,
     userSecret: conn.snaptrade_user_secret,
   })
-
   const accounts: SnapAccount[] = Array.isArray(accountsResp) ? accountsResp : []
+
+  // Pull ALL activities across ALL accounts in one shot. This endpoint is
+  // the canonical one — the older per-account `getAccountActivities` returns
+  // 0 for some account types (notably IRAs at Fidelity), even when the
+  // transactions endpoint returns hundreds of records for the same account.
+  const { data: activitiesResp } = await snaptrade.transactionsAndReporting.getActivities({
+    userId: conn.snaptrade_user_id,
+    userSecret: conn.snaptrade_user_secret,
+    startDate,
+    endDate,
+    // Don't pass `type` — we'll filter BUY/SELL in `activityToFilled` so
+    // we can also see dividends/reinvestments in future phases if useful.
+  })
+
+  // SDK historically has shipped both shapes — defend against either.
+  const activitiesData = activitiesResp as
+    | { activities?: SnapActivity[] }
+    | SnapActivity[]
+    | undefined
+  const activities: SnapActivity[] = Array.isArray(activitiesData)
+    ? activitiesData
+    : activitiesData?.activities ?? []
+
   const fills: FilledTrade[] = []
-
-  for (const account of accounts) {
-    if (!account.id) continue
-    const accountLabel = account.name
-      ?? `${account.institutionName ?? account.brokerage?.name ?? 'Broker'}${account.number ? ` ${account.number}` : ''}`
-
-    try {
-      let offset = 0
-      const limit = 1000
-      let hasMore = true
-
-      while (hasMore) {
-        const { data: page } = await snaptrade.accountInformation.getAccountActivities({
-          accountId: account.id,
-          userId: conn.snaptrade_user_id,
-          userSecret: conn.snaptrade_user_secret,
-          startDate,
-          endDate,
-          type: 'BUY,SELL',
-          offset,
-          limit,
-        })
-
-        // SDK historically has shipped both shapes — defend against either.
-        const pageData = page as { activities?: SnapActivity[] } | SnapActivity[] | undefined
-        const activities: SnapActivity[] = Array.isArray(pageData)
-          ? pageData
-          : pageData?.activities ?? []
-
-        if (activities.length === 0) {
-          hasMore = false
-          break
-        }
-
-        for (const activity of activities) {
-          const fill = activityToFilled(activity, account.id, accountLabel ?? null)
-          if (fill) fills.push(fill)
-        }
-
-        hasMore = activities.length === limit
-        offset += limit
-      }
-    } catch (acctErr) {
-      console.error(
-        `[snaptrade/sync] account ${account.id} failed:`,
-        acctErr instanceof Error ? acctErr.message : String(acctErr)
-      )
-    }
+  for (const activity of activities) {
+    const fill = activityToFilled(activity)
+    if (fill) fills.push(fill)
   }
 
   return { fills, accountCount: accounts.length }
@@ -294,7 +254,7 @@ export async function POST(request: Request) {
     )
   }
 
-  let body: { startDate?: string; endDate?: string; refresh?: boolean } = {}
+  let body: { startDate?: string; endDate?: string } = {}
   try {
     body = await request.json()
   } catch {
@@ -302,19 +262,14 @@ export async function POST(request: Request) {
   }
   const startDate = body.startDate ?? '2000-01-01'  // cover all reasonable history
   const endDate = body.endDate ?? new Date().toISOString().split('T')[0]
-  const refresh = body.refresh === true
 
   const admin = createAdminClient()
   const allFills: FilledTrade[] = []
   let totalAccounts = 0
-  let totalRefreshed = 0
   let lastSyncError: string | null = null
 
   for (const conn of connections) {
     try {
-      if (refresh) {
-        totalRefreshed += await refreshAllAuthorizations(conn)
-      }
       const { fills, accountCount } = await syncConnection(conn, startDate, endDate)
       allFills.push(...fills)
       totalAccounts += accountCount
@@ -368,8 +323,6 @@ export async function POST(request: Request) {
     accounts: totalAccounts,
     fillsFetched: allFills.length,
     fillsTotal: mergedFills.length,
-    authorizationsRefreshed: totalRefreshed,
-    refreshRequested: refresh,
     lastSyncError,
   })
 }
