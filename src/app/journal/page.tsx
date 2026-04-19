@@ -18,7 +18,7 @@ const ENTRY_TABS: { key: EntryTab; label: string }[] = [
 ]
 
 const TOP_TABS: { key: TopTab; label: string }[] = [
-  { key: 'entries', label: 'Entries' },
+  { key: 'entries', label: 'Bot Blog' },
   { key: 'broker', label: 'Broker' },
   { key: 'fills', label: 'Fills' },
 ]
